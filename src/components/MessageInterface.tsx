@@ -66,18 +66,18 @@ const MessageInterface: React.FC<MessageInterfaceProps> = ({
   }
 
   return (
-    <Card className="h-96 flex flex-col">
-      <CardHeader className="pb-3">
-        <CardTitle className="flex items-center space-x-3">
-          <Avatar className="h-8 w-8">
+    <Card className="h-80 sm:h-96 lg:h-[28rem] flex flex-col">
+      <CardHeader className="pb-2 sm:pb-3 px-4 sm:px-6">
+        <CardTitle className="flex items-center space-x-2 sm:space-x-3">
+          <Avatar className="h-6 w-6 sm:h-8 sm:w-8 shrink-0">
             <AvatarFallback className="bg-primary text-primary-foreground text-xs">
               {getInitials(conversationUserName)}
             </AvatarFallback>
           </Avatar>
-          <div>
-            <p className="text-sm font-medium">{conversationUserName}</p>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm sm:text-base font-medium truncate">{conversationUserName}</p>
             {conversationUserCompany && (
-              <p className="text-xs text-muted-foreground">{conversationUserCompany}</p>
+              <p className="text-xs sm:text-sm text-muted-foreground truncate">{conversationUserCompany}</p>
             )}
           </div>
         </CardTitle>
@@ -85,12 +85,12 @@ const MessageInterface: React.FC<MessageInterfaceProps> = ({
 
       <CardContent className="flex-1 flex flex-col p-0">
         {/* Messages Area */}
-        <ScrollArea className="flex-1 px-4">
+        <ScrollArea className="flex-1 px-3 sm:px-4">
           {messages.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full text-center py-8">
-              <MessageSquare className="h-12 w-12 text-muted-foreground mb-4" />
-              <p className="text-muted-foreground">No messages yet</p>
-              <p className="text-sm text-muted-foreground">Start a conversation!</p>
+            <div className="flex flex-col items-center justify-center h-full text-center py-6 sm:py-8">
+              <MessageSquare className="h-8 w-8 sm:h-12 sm:w-12 text-muted-foreground mb-3 sm:mb-4" />
+              <p className="text-sm sm:text-base text-muted-foreground">No messages yet</p>
+              <p className="text-xs sm:text-sm text-muted-foreground">Start a conversation!</p>
             </div>
           ) : (
             <div className="space-y-4 py-4">
@@ -142,26 +142,27 @@ const MessageInterface: React.FC<MessageInterfaceProps> = ({
         </ScrollArea>
 
         {/* Message Input */}
-        <div className="border-t border-border-light p-4">
-          <form onSubmit={handleSendMessage} className="flex space-x-2">
+        <div className="border-t border-border-light p-3 sm:p-4">
+          <form onSubmit={handleSendMessage} className="flex gap-2 sm:gap-3">
             <Input
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
               placeholder="Type your message..."
               disabled={isSending}
-              className="flex-1"
+              className="flex-1 text-sm sm:text-base h-9 sm:h-10"
             />
-            <Button 
-              type="submit" 
+            <Button
+              type="submit"
               disabled={!newMessage.trim() || isSending}
               size="sm"
-              className="px-3"
+              className="px-2 sm:px-3 h-9 sm:h-10 shrink-0"
             >
               {isSending ? (
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                <div className="animate-spin rounded-full h-3 w-3 sm:h-4 sm:w-4 border-b-2 border-white"></div>
               ) : (
-                <Send className="h-4 w-4" />
+                <Send className="h-3 w-3 sm:h-4 sm:w-4" />
               )}
+              <span className="sr-only">Send message</span>
             </Button>
           </form>
         </div>

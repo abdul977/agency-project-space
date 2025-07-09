@@ -4,6 +4,46 @@ import { supabase } from '@/integrations/supabase/client';
 import { subscribeToMessages, publishMessage } from '@/lib/redis';
 import { notifyClientOfMessage } from '@/lib/notifications';
 
+// Local storage utilities for client-side message persistence
+const MESSAGES_STORAGE_KEY = 'client_messages';
+const CONVERSATIONS_STORAGE_KEY = 'client_conversations';
+
+const saveMessagesToStorage = (messages: Message[]) => {
+  try {
+    localStorage.setItem(MESSAGES_STORAGE_KEY, JSON.stringify(messages));
+  } catch (error) {
+    console.error('Error saving messages to localStorage:', error);
+  }
+};
+
+const loadMessagesFromStorage = (): Message[] => {
+  try {
+    const stored = localStorage.getItem(MESSAGES_STORAGE_KEY);
+    return stored ? JSON.parse(stored) : [];
+  } catch (error) {
+    console.error('Error loading messages from localStorage:', error);
+    return [];
+  }
+};
+
+const saveConversationsToStorage = (conversations: Conversation[]) => {
+  try {
+    localStorage.setItem(CONVERSATIONS_STORAGE_KEY, JSON.stringify(conversations));
+  } catch (error) {
+    console.error('Error saving conversations to localStorage:', error);
+  }
+};
+
+const loadConversationsFromStorage = (): Conversation[] => {
+  try {
+    const stored = localStorage.getItem(CONVERSATIONS_STORAGE_KEY);
+    return stored ? JSON.parse(stored) : [];
+  } catch (error) {
+    console.error('Error loading conversations from localStorage:', error);
+    return [];
+  }
+};
+
 export interface Message {
   id: string;
   sender_id: string;
@@ -29,8 +69,8 @@ export interface Conversation {
 
 export const useMessages = (conversationUserId?: string) => {
   const { user } = useAuth();
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [messages, setMessages] = useState<Message[]>(() => loadMessagesFromStorage());
+  const [conversations, setConversations] = useState<Conversation[]>(() => loadConversationsFromStorage());
   const [isLoading, setIsLoading] = useState(true);
   const [isSending, setIsSending] = useState(false);
 
@@ -127,13 +167,15 @@ export const useMessages = (conversationUserId?: string) => {
       if (error) {
         console.error('Error fetching messages:', error);
       } else {
-        setMessages(data || []);
-        
+        const messagesData = data || [];
+        setMessages(messagesData);
+        saveMessagesToStorage(messagesData);
+
         // Mark messages as read
-        const unreadMessages = data?.filter(msg => 
+        const unreadMessages = messagesData.filter(msg =>
           msg.receiver_id === user.id && !msg.is_read
         );
-        
+
         if (unreadMessages && unreadMessages.length > 0) {
           await supabase
             .from('messages')
@@ -158,7 +200,11 @@ export const useMessages = (conversationUserId?: string) => {
     const setupSubscription = async () => {
       try {
         subscriber = await subscribeToMessages(roomId, (message) => {
-          setMessages(prev => [...prev, message]);
+          setMessages(prev => {
+            const updatedMessages = [...prev, message];
+            saveMessagesToStorage(updatedMessages);
+            return updatedMessages;
+          });
         });
       } catch (error) {
         console.error('Error setting up message subscription:', error);
@@ -230,8 +276,10 @@ export const useMessages = (conversationUserId?: string) => {
         return false;
       }
 
-      // Add to local state
-      setMessages(prev => [...prev, message]);
+      // Add to local state and save to storage
+      const updatedMessages = [...messages, message];
+      setMessages(updatedMessages);
+      saveMessagesToStorage(updatedMessages);
 
       // Publish real-time message
       const roomId = getRoomId(user.id, receiverId);

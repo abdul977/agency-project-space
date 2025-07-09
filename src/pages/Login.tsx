@@ -222,30 +222,7 @@ const Login = () => {
           </CardContent>
         </Card>
 
-        {/* Admin Creation (Development Only) */}
-        <Card className="border-border-light bg-muted/30">
-          <CardContent className="p-4 text-center">
-            <p className="text-xs text-muted-foreground mb-2">
-              Development Only - Create Admin User
-            </p>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleCreateAdmin}
-              disabled={isCreatingAdmin}
-              className="text-xs"
-            >
-              {isCreatingAdmin ? (
-                <>
-                  <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                  Creating...
-                </>
-              ) : (
-                "Create Admin User"
-              )}
-            </Button>
-          </CardContent>
-        </Card>
+
 
         {/* Footer */}
         <div className="text-center">

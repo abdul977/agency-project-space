@@ -277,15 +277,68 @@ const AdminClientDetail = () => {
       {/* Header */}
       <header className="border-b border-border-light bg-card">
         <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
+          {/* Mobile Layout */}
+          <div className="flex flex-col space-y-4 md:hidden">
+            {/* Top row: Back button and action buttons */}
+            <div className="flex items-center justify-between">
+              <Button variant="ghost" size="sm" asChild>
+                <Link to="/admin">
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  <span className="hidden xs:inline">Back to Admin</span>
+                  <span className="xs:hidden">Back</span>
+                </Link>
+              </Button>
+
+              <div className="flex items-center space-x-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setActiveTab('messages')}
+                  className="px-2"
+                >
+                  <MessageSquare className="h-4 w-4" />
+                  <span className="sr-only">Message Client</span>
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setActiveTab('settings')}
+                  className="px-2"
+                >
+                  <Settings className="h-4 w-4" />
+                  <span className="sr-only">Settings</span>
+                </Button>
+              </div>
+            </div>
+
+            {/* Bottom row: Client info */}
+            <div className="flex items-center space-x-3">
+              <Avatar className="h-10 w-10 sm:h-12 sm:w-12">
+                <AvatarFallback className="bg-primary text-primary-foreground">
+                  {client.full_name ? getInitials(client.full_name) : 'U'}
+                </AvatarFallback>
+              </Avatar>
+              <div className="min-w-0 flex-1">
+                <h1 className="text-lg sm:text-xl font-bold text-foreground truncate">
+                  {client.full_name || 'Unknown User'}
+                </h1>
+                <p className="text-sm text-muted-foreground truncate">
+                  {client.company_name} • {projects.length} projects
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Desktop Layout */}
+          <div className="hidden md:flex items-center justify-between">
+            <div className="flex items-center space-x-4 lg:space-x-6">
               <Button variant="ghost" size="sm" asChild>
                 <Link to="/admin">
                   <ArrowLeft className="h-4 w-4 mr-2" />
                   Back to Admin
                 </Link>
               </Button>
-              <div className="flex items-center space-x-3">
+              <div className="flex items-center space-x-3 lg:space-x-4">
                 <Avatar className="h-12 w-12">
                   <AvatarFallback className="bg-primary text-primary-foreground">
                     {client.full_name ? getInitials(client.full_name) : 'U'}
@@ -301,7 +354,7 @@ const AdminClientDetail = () => {
                 </div>
               </div>
             </div>
-            
+
             <div className="flex items-center space-x-2">
               <Button
                 variant="outline"
@@ -309,7 +362,8 @@ const AdminClientDetail = () => {
                 onClick={() => setActiveTab('messages')}
               >
                 <MessageSquare className="h-4 w-4 mr-2" />
-                Message Client
+                <span className="hidden lg:inline">Message Client</span>
+                <span className="lg:hidden">Message</span>
               </Button>
               <Button
                 variant="outline"
@@ -324,59 +378,102 @@ const AdminClientDetail = () => {
         </div>
       </header>
 
-      <div className="container mx-auto px-4 py-8">
-        <div className="grid lg:grid-cols-4 gap-8">
+      <div className="container mx-auto px-4 py-4 sm:py-6 lg:py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8">
           {/* Sidebar - Client Info */}
           <div className="lg:col-span-1">
             <Card className="border-border-light">
-              <CardHeader>
-                <CardTitle>Client Information</CardTitle>
+              <CardHeader className="pb-4 sm:pb-6">
+                <CardTitle className="text-lg sm:text-xl lg:text-2xl">Client Information</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-3 sm:space-y-4 px-4 sm:px-6">
                 <div className="space-y-2">
                   <div className="flex items-center space-x-2 text-sm">
-                    <User className="h-4 w-4 text-muted-foreground" />
+                    <User className="h-4 w-4 text-muted-foreground shrink-0" />
                     <span className="font-medium">Full Name:</span>
                   </div>
-                  <p className="text-sm text-muted-foreground pl-6">
+                  <p className="text-sm text-muted-foreground pl-6 truncate">
                     {client.full_name || 'Not provided'}
                   </p>
                 </div>
 
                 <div className="space-y-2">
                   <div className="flex items-center space-x-2 text-sm">
-                    <Building2 className="h-4 w-4 text-muted-foreground" />
+                    <Building2 className="h-4 w-4 text-muted-foreground shrink-0" />
                     <span className="font-medium">Company:</span>
                   </div>
-                  <p className="text-sm text-muted-foreground pl-6">
+                  <p className="text-sm text-muted-foreground pl-6 truncate">
                     {client.company_name || 'Not provided'}
                   </p>
                 </div>
 
                 <div className="space-y-2">
                   <div className="flex items-center space-x-2 text-sm">
-                    <Phone className="h-4 w-4 text-muted-foreground" />
+                    <Phone className="h-4 w-4 text-muted-foreground shrink-0" />
                     <span className="font-medium">Phone:</span>
                   </div>
-                  <p className="text-sm text-muted-foreground pl-6">
+                  <p className="text-sm text-muted-foreground pl-6 truncate">
                     {client.phone_number}
                   </p>
                 </div>
 
                 <div className="space-y-2">
                   <div className="flex items-center space-x-2 text-sm">
-                    <Calendar className="h-4 w-4 text-muted-foreground" />
+                    <Calendar className="h-4 w-4 text-muted-foreground shrink-0" />
                     <span className="font-medium">Joined:</span>
                   </div>
-                  <p className="text-sm text-muted-foreground pl-6">
+                  <p className="text-sm text-muted-foreground pl-6 truncate">
                     {formatDate(client.created_at)}
                   </p>
                 </div>
               </CardContent>
             </Card>
 
-            {/* Navigation */}
-            <Card className="border-border-light mt-6">
+            {/* Mobile Navigation - Horizontal Scroll */}
+            <div className="lg:hidden mt-4 sm:mt-6">
+              <div className="flex space-x-2 overflow-x-auto pb-2 scrollbar-hide">
+                <Button
+                  variant={activeTab === 'projects' ? 'default' : 'ghost'}
+                  className="flex-shrink-0 px-3 py-2 text-sm"
+                  onClick={() => setActiveTab('projects')}
+                >
+                  <Folder className="h-4 w-4 mr-2" />
+                  <span className="hidden xs:inline">Projects ({projects.length})</span>
+                  <span className="xs:hidden">Projects</span>
+                </Button>
+
+                <Button
+                  variant={activeTab === 'messages' ? 'default' : 'ghost'}
+                  className="flex-shrink-0 px-3 py-2 text-sm"
+                  onClick={() => setActiveTab('messages')}
+                >
+                  <MessageSquare className="h-4 w-4 mr-2" />
+                  Messages
+                </Button>
+
+                <Button
+                  variant={activeTab === 'deliverables' ? 'default' : 'ghost'}
+                  className="flex-shrink-0 px-3 py-2 text-sm"
+                  onClick={() => setActiveTab('deliverables')}
+                >
+                  <Send className="h-4 w-4 mr-2" />
+                  <span className="hidden sm:inline">Deliverables</span>
+                  <span className="sm:hidden">Files</span>
+                </Button>
+
+                <Button
+                  variant={activeTab === 'settings' ? 'default' : 'ghost'}
+                  className="flex-shrink-0 px-3 py-2 text-sm"
+                  onClick={() => setActiveTab('settings')}
+                >
+                  <Settings className="h-4 w-4 mr-2" />
+                  Settings
+                </Button>
+              </div>
+            </div>
+
+            {/* Desktop Navigation - Vertical Card */}
+            <Card className="hidden lg:block border-border-light mt-6">
               <CardContent className="p-4 space-y-2">
                 <Button
                   variant={activeTab === 'projects' ? 'default' : 'ghost'}
@@ -386,7 +483,7 @@ const AdminClientDetail = () => {
                   <Folder className="h-4 w-4 mr-2" />
                   Projects ({projects.length})
                 </Button>
-                
+
                 <Button
                   variant={activeTab === 'messages' ? 'default' : 'ghost'}
                   className="w-full justify-start"
@@ -420,44 +517,88 @@ const AdminClientDetail = () => {
           {/* Main Content */}
           <div className="lg:col-span-3">
             {activeTab === 'projects' && (
-              <div className="space-y-6">
-                <div>
-                  <h2 className="text-2xl font-bold text-foreground">Client Projects</h2>
-                  <p className="text-muted-foreground">
+              <div className="space-y-4 sm:space-y-6">
+                <div className="text-center sm:text-left">
+                  <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-foreground">Client Projects</h2>
+                  <p className="text-sm sm:text-base text-muted-foreground mt-1">
                     View and manage all projects for this client
                   </p>
                 </div>
 
                 {projects.length === 0 ? (
                   <Card className="border-border-light">
-                    <CardContent className="py-12 text-center">
-                      <Folder className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                      <h3 className="text-lg font-semibold text-foreground mb-2">
+                    <CardContent className="py-8 sm:py-12 text-center px-4 sm:px-6">
+                      <Folder className="h-8 w-8 sm:h-12 sm:w-12 mx-auto text-muted-foreground mb-3 sm:mb-4" />
+                      <h3 className="text-base sm:text-lg font-semibold text-foreground mb-2">
                         No projects yet
                       </h3>
-                      <p className="text-muted-foreground">
+                      <p className="text-sm sm:text-base text-muted-foreground">
                         This client hasn't created any projects yet.
                       </p>
                     </CardContent>
                   </Card>
                 ) : (
-                  <div className="space-y-6">
+                  <div className="space-y-4 sm:space-y-6">
                     {projects.map((project) => (
                       <Card key={project.id} className="border-border-light">
-                        <CardHeader>
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center space-x-3">
-                              <h3 className="text-lg font-semibold text-foreground">
-                                {project.name}
-                              </h3>
-                              <Badge className={getStatusColor(project.status)}>
+                        <CardHeader className="pb-4 sm:pb-6">
+                          {/* Mobile Layout */}
+                          <div className="sm:hidden space-y-3">
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="min-w-0 flex-1">
+                                <h3 className="text-base font-semibold text-foreground truncate">
+                                  {project.name}
+                                </h3>
+                                <p className="text-xs text-muted-foreground mt-1">
+                                  Created {formatDate(project.created_at)} • {project.folders.length} folders
+                                </p>
+                              </div>
+                              <Badge className={`${getStatusColor(project.status)} shrink-0 text-xs`}>
                                 {getStatusIcon(project.status)}
                                 <span className="ml-1">{getStatusText(project.status)}</span>
                               </Badge>
                             </div>
-                            
-                            <div className="flex items-center space-x-2">
-                              <div className="flex items-center space-x-2">
+
+                            <div className="flex flex-col sm:flex-row gap-2">
+                              <select
+                                value={project.status}
+                                onChange={(e) => updateProjectStatus(project.id, e.target.value as any)}
+                                className="text-sm border border-border-light rounded px-2 py-1 bg-background flex-1"
+                              >
+                                <option value="starting">Starting</option>
+                                <option value="in_progress">In Progress</option>
+                                <option value="completed">Completed</option>
+                              </select>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  setSelectedProjectId(project.id);
+                                  setActiveTab('deliverables');
+                                }}
+                                className="w-full sm:w-auto"
+                              >
+                                <Send className="h-4 w-4 mr-2" />
+                                <span className="hidden xs:inline">Deliverables</span>
+                                <span className="xs:hidden">Files</span>
+                              </Button>
+                            </div>
+                          </div>
+
+                          {/* Desktop Layout */}
+                          <div className="hidden sm:block">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center space-x-3 min-w-0 flex-1">
+                                <h3 className="text-lg font-semibold text-foreground truncate">
+                                  {project.name}
+                                </h3>
+                                <Badge className={getStatusColor(project.status)}>
+                                  {getStatusIcon(project.status)}
+                                  <span className="ml-1">{getStatusText(project.status)}</span>
+                                </Badge>
+                              </div>
+
+                              <div className="flex items-center space-x-2 shrink-0">
                                 <select
                                   value={project.status}
                                   onChange={(e) => updateProjectStatus(project.id, e.target.value as any)}
@@ -480,44 +621,46 @@ const AdminClientDetail = () => {
                                 </Button>
                               </div>
                             </div>
+                            <CardDescription className="mt-2">
+                              Created {formatDate(project.created_at)} • {project.folders.length} folders
+                            </CardDescription>
                           </div>
-                          <CardDescription>
-                            Created {formatDate(project.created_at)} • {project.folders.length} folders
-                          </CardDescription>
                         </CardHeader>
                         
-                        <CardContent className="space-y-4">
+                        <CardContent className="space-y-3 sm:space-y-4 px-4 sm:px-6">
                           {project.folders.map((folder) => (
-                            <div key={folder.id} className="border border-border-light rounded-lg p-4">
-                              <div className="flex items-center space-x-2 mb-3">
-                                <Folder className="h-4 w-4 text-primary" />
-                                <h4 className="font-medium text-foreground">{folder.name}</h4>
-                                <Badge variant="secondary" className="text-xs">
+                            <div key={folder.id} className="border border-border-light rounded-lg p-3 sm:p-4">
+                              <div className="flex items-center justify-between sm:justify-start sm:space-x-2 mb-3">
+                                <div className="flex items-center space-x-2 min-w-0 flex-1">
+                                  <Folder className="h-4 w-4 text-primary shrink-0" />
+                                  <h4 className="font-medium text-foreground truncate">{folder.name}</h4>
+                                </div>
+                                <Badge variant="secondary" className="text-xs shrink-0">
                                   {folder.inputs.length} inputs
                                 </Badge>
                               </div>
-                              
-                              <div className="space-y-2">
+
+                              <div className="space-y-2 sm:space-y-3">
                                 {folder.inputs.map((input, index) => (
-                                  <div key={input.id} className="bg-muted/30 rounded p-3">
-                                    <div className="flex items-start justify-between">
-                                      <div className="flex-1">
+                                  <div key={input.id} className="bg-muted/30 rounded p-2 sm:p-3">
+                                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
+                                      <div className="flex-1 min-w-0">
                                         <p className="text-xs text-muted-foreground mb-1">
                                           Input {index + 1}
                                         </p>
-                                        <p className="text-sm text-foreground whitespace-pre-wrap">
+                                        <p className="text-sm text-foreground whitespace-pre-wrap break-words">
                                           {input.content || 'No content provided'}
                                         </p>
                                       </div>
-                                      <p className="text-xs text-muted-foreground ml-4">
+                                      <p className="text-xs text-muted-foreground shrink-0 sm:ml-4">
                                         {formatDate(input.updated_at)}
                                       </p>
                                     </div>
                                   </div>
                                 ))}
-                                
+
                                 {folder.inputs.length === 0 && (
-                                  <p className="text-sm text-muted-foreground italic">
+                                  <p className="text-sm text-muted-foreground italic text-center sm:text-left">
                                     No inputs added yet
                                   </p>
                                 )}

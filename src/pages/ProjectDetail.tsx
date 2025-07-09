@@ -357,10 +357,10 @@ const ProjectDetail = () => {
     <div className="min-h-screen bg-background overflow-x-hidden">
       {/* Header */}
       <header className="border-b border-border-light bg-card">
-        <div className="container mx-auto px-4 py-4 max-w-full overflow-x-hidden">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="container mx-auto px-4 py-3 sm:py-4 lg:py-6 max-w-full overflow-x-hidden">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 min-w-0 flex-1">
-              <Button variant="ghost" size="sm" asChild className="flex-shrink-0">
+              <Button variant="ghost" size="sm" asChild className="flex-shrink-0 self-start">
                 <Link to="/dashboard">
                   <ArrowLeft className="h-4 w-4 mr-2" />
                   <span className="hidden sm:inline">Back to Dashboard</span>
@@ -368,12 +368,14 @@ const ProjectDetail = () => {
                 </Link>
               </Button>
               <div className="min-w-0 flex-1">
-                <h1 className="text-lg sm:text-xl font-bold text-foreground text-wrap">{project.name}</h1>
-                <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-2 mt-1">
-                  <Badge className={getStatusColor(project.status)}>
+                <h1 className="text-base sm:text-lg lg:text-xl font-bold text-foreground text-wrap break-words">
+                  {project.name}
+                </h1>
+                <div className="flex flex-col xs:flex-row xs:items-center gap-2 mt-1">
+                  <Badge className={`${getStatusColor(project.status)} text-xs`}>
                     {getStatusText(project.status)}
                   </Badge>
-                  <span className="text-sm text-muted-foreground text-wrap">
+                  <span className="text-xs sm:text-sm text-muted-foreground text-wrap">
                     Created {formatDate(project.created_at)}
                   </span>
                 </div>
@@ -383,39 +385,40 @@ const ProjectDetail = () => {
         </div>
       </header>
 
-      <div className="container mx-auto px-4 py-8 max-w-full overflow-x-hidden">
-        <div className="space-y-6 max-w-full overflow-x-hidden">
+      <div className="container mx-auto px-4 py-4 sm:py-6 lg:py-8 max-w-full overflow-x-hidden">
+        <div className="space-y-4 sm:space-y-6 max-w-full overflow-x-hidden">
           {/* Create New Folder */}
           <Card className="border-border-light">
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <FolderPlus className="h-5 w-5 text-primary" />
-                <span>Create New Folder</span>
+            <CardHeader className="pb-4 sm:pb-6">
+              <CardTitle className="flex items-center space-x-2 text-base sm:text-lg lg:text-xl">
+                <FolderPlus className="h-4 w-4 sm:h-5 sm:w-5 text-primary shrink-0" />
+                <span className="truncate">Create New Folder</span>
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-sm">
                 Organize your project requirements into folders
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="flex flex-col sm:flex-row gap-2 sm:gap-2">
+            <CardContent className="px-4 sm:px-6">
+              <div className="flex flex-col sm:flex-row gap-3 sm:gap-2">
                 <Input
                   placeholder="Enter folder name..."
                   value={newFolderName}
                   onChange={(e) => setNewFolderName(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && createFolder()}
-                  className="flex-1 text-wrap-anywhere"
+                  className="flex-1 text-wrap-anywhere text-sm sm:text-base"
                 />
                 <Button
                   onClick={createFolder}
                   disabled={!newFolderName.trim() || isCreatingFolder}
-                  className="bg-primary hover:bg-primary-hover w-full sm:w-auto flex-shrink-0"
+                  className="bg-primary hover:bg-primary-hover w-full sm:w-auto flex-shrink-0 text-sm"
                 >
                   {isCreatingFolder ? (
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
                   ) : (
                     <>
                       <Plus className="h-4 w-4 mr-2" />
-                      Create
+                      <span className="hidden xs:inline">Create</span>
+                      <span className="xs:hidden">Add</span>
                     </>
                   )}
                 </Button>
@@ -426,39 +429,39 @@ const ProjectDetail = () => {
           {/* Folders */}
           {folders.length === 0 ? (
             <Card className="border-border-light">
-              <CardContent className="py-12 text-center">
-                <Folder className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                <h3 className="text-lg font-semibold text-foreground mb-2">
+              <CardContent className="py-8 sm:py-12 text-center px-4 sm:px-6">
+                <Folder className="h-8 w-8 sm:h-12 sm:w-12 mx-auto text-muted-foreground mb-3 sm:mb-4" />
+                <h3 className="text-base sm:text-lg font-semibold text-foreground mb-2">
                   No folders yet
                 </h3>
-                <p className="text-muted-foreground">
+                <p className="text-sm sm:text-base text-muted-foreground">
                   Create your first folder to start organizing your project requirements.
                 </p>
               </CardContent>
             </Card>
           ) : (
-            <div className="space-y-6">
+            <div className="space-y-4 sm:space-y-6">
               {folders.map((folder) => (
                 <Card key={folder.id} className="border-border-light">
-                  <CardHeader>
-                    <CardTitle className="flex items-center space-x-2 text-wrap">
-                      <Folder className="h-5 w-5 text-primary flex-shrink-0" />
-                      <span className="text-wrap">{folder.name}</span>
+                  <CardHeader className="pb-4 sm:pb-6">
+                    <CardTitle className="flex items-center space-x-2 text-wrap text-base sm:text-lg lg:text-xl">
+                      <Folder className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
+                      <span className="text-wrap break-words min-w-0">{folder.name}</span>
                     </CardTitle>
-                    <CardDescription className="text-wrap">
+                    <CardDescription className="text-wrap text-sm">
                       {folder.inputs.length} input field{folder.inputs.length !== 1 ? 's' : ''}
                     </CardDescription>
                   </CardHeader>
-                  <CardContent className="space-y-4 text-container-safe">
+                  <CardContent className="space-y-3 sm:space-y-4 text-container-safe px-4 sm:px-6">
                     {/* Input Fields */}
                     {folder.inputs.map((input, index) => (
-                      <div key={input.id} className="flex flex-col sm:flex-row gap-2 sm:gap-2">
+                      <div key={input.id} className="flex flex-col sm:flex-row gap-3 sm:gap-2">
                         <div className="flex-1 min-w-0 container-safe">
                           <Textarea
                             placeholder={`Requirement ${index + 1}...`}
                             value={input.content}
                             onChange={(e) => updateInput(input.id, e.target.value)}
-                            className="min-h-[80px] w-full max-w-full resize-none border-input-border focus:border-ring text-wrap-anywhere"
+                            className="min-h-[60px] sm:min-h-[80px] w-full max-w-full resize-none border-input-border focus:border-ring text-wrap-anywhere text-sm sm:text-base"
                             style={{
                               wordWrap: 'break-word',
                               overflowWrap: 'break-word',
@@ -473,9 +476,9 @@ const ProjectDetail = () => {
                           variant="outline"
                           size="sm"
                           onClick={() => removeInput(input.id, folder.id)}
-                          className="text-red-600 hover:text-red-700 hover:bg-red-50 w-full sm:w-auto flex-shrink-0"
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50 w-full sm:w-auto flex-shrink-0 text-xs sm:text-sm"
                         >
-                          <Trash2 className="h-4 w-4 mr-2 sm:mr-0" />
+                          <Trash2 className="h-3 w-3 sm:h-4 sm:w-4 mr-2 sm:mr-0" />
                           <span className="sm:hidden">Remove</span>
                         </Button>
                       </div>
@@ -485,10 +488,11 @@ const ProjectDetail = () => {
                     <Button
                       variant="outline"
                       onClick={() => addInput(folder.id)}
-                      className="w-full border-dashed"
+                      className="w-full border-dashed text-sm sm:text-base py-2 sm:py-3"
                     >
                       <Plus className="h-4 w-4 mr-2" />
-                      Add Input Field
+                      <span className="hidden xs:inline">Add Input Field</span>
+                      <span className="xs:hidden">Add Field</span>
                     </Button>
                   </CardContent>
                 </Card>

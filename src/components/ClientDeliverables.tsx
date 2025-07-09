@@ -26,8 +26,8 @@ interface Deliverable {
   is_sent?: boolean;
   created_at: string;
   sent_at?: string;
-  // Legacy fields that might still exist
-  type?: 'url' | 'file';
+  // Legacy fields that might still exist - type can be any string from database
+  type?: string;
   content?: string;
   delivered_at?: string;
   projects?: {
@@ -40,6 +40,12 @@ const ClientDeliverables = () => {
   const { toast } = useToast();
   const [deliverables, setDeliverables] = useState<Deliverable[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Helper function to safely get deliverable type
+  const getDeliverableType = (deliverable: Deliverable): 'url' | 'file' => {
+    const type = deliverable.deliverable_type || deliverable.type;
+    return (type === 'url' || type === 'file') ? type : 'url'; // Default to 'url' if unknown
+  };
 
   useEffect(() => {
     const fetchDeliverables = async () => {
@@ -111,7 +117,7 @@ const ClientDeliverables = () => {
   };
 
   const handleDownload = (deliverable: Deliverable) => {
-    const type = deliverable.deliverable_type || deliverable.type;
+    const type = getDeliverableType(deliverable);
     const url = deliverable.deliverable_url || (type === 'url' ? deliverable.content : null);
     const filePath = deliverable.file_path || (type === 'file' ? deliverable.content : null);
 
@@ -138,99 +144,169 @@ const ClientDeliverables = () => {
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold text-foreground">Your Deliverables</h2>
-        <p className="text-muted-foreground">
+    <div className="space-y-4 sm:space-y-6">
+      <div className="text-center sm:text-left">
+        <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-foreground">Your Deliverables</h2>
+        <p className="text-sm sm:text-base text-muted-foreground mt-1">
           Access your completed project deliverables
         </p>
       </div>
 
       {deliverables.length === 0 ? (
         <Card className="border-border-light">
-          <CardContent className="py-12 text-center">
-            <Package className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold text-foreground mb-2">
+          <CardContent className="py-8 sm:py-12 text-center px-4 sm:px-6">
+            <Package className="h-8 w-8 sm:h-12 sm:w-12 mx-auto text-muted-foreground mb-3 sm:mb-4" />
+            <h3 className="text-base sm:text-lg font-semibold text-foreground mb-2">
               No deliverables yet
             </h3>
-            <p className="text-muted-foreground">
+            <p className="text-sm sm:text-base text-muted-foreground">
               Your completed project deliverables will appear here
             </p>
           </CardContent>
         </Card>
       ) : (
-        <div className="grid gap-4">
+        <div className="grid gap-3 sm:gap-4 lg:gap-6">
           {deliverables.map((deliverable) => (
             <Card key={deliverable.id} className="border-border-light hover:shadow-md transition-shadow">
-              <CardContent className="p-6">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-3 mb-2">
-                      <div className="flex items-center space-x-2">
-                        {(deliverable.deliverable_type || deliverable.type) === 'url' ? (
-                          <Globe className="h-5 w-5 text-blue-500" />
-                        ) : (
-                          <FileText className="h-5 w-5 text-green-500" />
-                        )}
-                        <h3 className="font-semibold text-foreground">
-                          {deliverable.title}
-                        </h3>
-                      </div>
-
-                      <Badge variant="default" className="bg-green-100 text-green-800">
-                        <CheckCircle className="h-3 w-3 mr-1" />
-                        Delivered
-                      </Badge>
-
-                      <Badge variant="outline">
-                        {(deliverable.deliverable_type || deliverable.type) === 'url' ? 'Website' : 'File'}
-                      </Badge>
+              <CardContent className="p-4 sm:p-6">
+                {/* Mobile Layout */}
+                <div className="sm:hidden space-y-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center space-x-2 min-w-0 flex-1">
+                      {getDeliverableType(deliverable) === 'url' ? (
+                        <Globe className="h-4 w-4 text-blue-500 shrink-0" />
+                      ) : (
+                        <FileText className="h-4 w-4 text-green-500 shrink-0" />
+                      )}
+                      <h3 className="font-semibold text-foreground text-sm truncate">
+                        {deliverable.title}
+                      </h3>
                     </div>
+                    <Badge variant="default" className="bg-green-100 text-green-800 text-xs shrink-0">
+                      <CheckCircle className="h-3 w-3 mr-1" />
+                      Delivered
+                    </Badge>
+                  </div>
 
-                    <p className="text-sm text-muted-foreground mb-3">
+                  <div className="space-y-2">
+                    <Badge variant="outline" className="text-xs">
+                      {getDeliverableType(deliverable) === 'url' ? 'Website' : 'File'}
+                    </Badge>
+
+                    <p className="text-xs text-muted-foreground">
                       Project: {deliverable.projects?.name || 'Unknown Project'}
                     </p>
 
                     {(deliverable.description || deliverable.content) && (
-                      <p className="text-sm text-muted-foreground mb-3">
+                      <p className="text-xs text-muted-foreground line-clamp-2">
                         {deliverable.description || deliverable.content}
                       </p>
                     )}
 
-                    {(deliverable.deliverable_url || ((deliverable.deliverable_type || deliverable.type) === 'url' && deliverable.content)) && (
-                      <div className="flex items-center space-x-2 mb-3">
-                        <ExternalLink className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm text-primary font-medium">
+                    {(deliverable.deliverable_url || (getDeliverableType(deliverable) === 'url' && deliverable.content)) && (
+                      <div className="flex items-center space-x-1">
+                        <ExternalLink className="h-3 w-3 text-muted-foreground shrink-0" />
+                        <span className="text-xs text-primary font-medium truncate">
                           {deliverable.deliverable_url || deliverable.content}
                         </span>
                       </div>
                     )}
-                    
-                    <div className="flex items-center space-x-4 text-xs text-muted-foreground">
-                      <span className="flex items-center">
-                        <Calendar className="h-3 w-3 mr-1" />
+
+                    <div className="flex items-center text-xs text-muted-foreground">
+                      <Calendar className="h-3 w-3 mr-1 shrink-0" />
+                      <span className="truncate">
                         Delivered {(deliverable.sent_at || deliverable.delivered_at) ? formatDate(deliverable.sent_at || deliverable.delivered_at!) : 'Unknown'}
                       </span>
                     </div>
                   </div>
-                  
-                  <div className="flex items-center space-x-2">
-                    <Button
-                      onClick={() => handleDownload(deliverable)}
-                      className="bg-primary hover:bg-primary-hover"
-                    >
-                      {(deliverable.deliverable_type || deliverable.type) === 'url' ? (
-                        <>
-                          <ExternalLink className="h-4 w-4 mr-2" />
-                          Visit Site
-                        </>
-                      ) : (
-                        <>
-                          <Download className="h-4 w-4 mr-2" />
-                          Download
-                        </>
+
+                  <Button
+                    onClick={() => handleDownload(deliverable)}
+                    className="bg-primary hover:bg-primary-hover w-full text-sm"
+                  >
+                    {getDeliverableType(deliverable) === 'url' ? (
+                      <>
+                        <ExternalLink className="h-4 w-4 mr-2" />
+                        Visit Site
+                      </>
+                    ) : (
+                      <>
+                        <Download className="h-4 w-4 mr-2" />
+                        Download
+                      </>
+                    )}
+                  </Button>
+                </div>
+
+                {/* Desktop Layout */}
+                <div className="hidden sm:block">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center space-x-3 mb-2">
+                        <div className="flex items-center space-x-2">
+                          {getDeliverableType(deliverable) === 'url' ? (
+                            <Globe className="h-5 w-5 text-blue-500" />
+                          ) : (
+                            <FileText className="h-5 w-5 text-green-500" />
+                          )}
+                          <h3 className="font-semibold text-foreground truncate">
+                            {deliverable.title}
+                          </h3>
+                        </div>
+
+                        <Badge variant="default" className="bg-green-100 text-green-800 shrink-0">
+                          <CheckCircle className="h-3 w-3 mr-1" />
+                          Delivered
+                        </Badge>
+
+                        <Badge variant="outline">
+                          {getDeliverableType(deliverable) === 'url' ? 'Website' : 'File'}
+                        </Badge>
+                      </div>
+
+                      <p className="text-sm text-muted-foreground mb-3">
+                        Project: {deliverable.projects?.name || 'Unknown Project'}
+                      </p>
+
+                      {(deliverable.description || deliverable.content) && (
+                        <p className="text-sm text-muted-foreground mb-3">
+                          {deliverable.description || deliverable.content}
+                        </p>
                       )}
-                    </Button>
+
+                      {(deliverable.deliverable_url || (getDeliverableType(deliverable) === 'url' && deliverable.content)) && (
+                        <div className="flex items-center space-x-2 mb-3">
+                          <ExternalLink className="h-4 w-4 text-muted-foreground" />
+                          <span className="text-sm text-primary font-medium truncate">
+                            {deliverable.deliverable_url || deliverable.content}
+                          </span>
+                        </div>
+                      )}
+
+                      <div className="flex items-center text-sm text-muted-foreground">
+                        <Calendar className="h-3 w-3 mr-1" />
+                        Delivered {(deliverable.sent_at || deliverable.delivered_at) ? formatDate(deliverable.sent_at || deliverable.delivered_at!) : 'Unknown'}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center space-x-2 shrink-0">
+                      <Button
+                        onClick={() => handleDownload(deliverable)}
+                        className="bg-primary hover:bg-primary-hover"
+                      >
+                        {getDeliverableType(deliverable) === 'url' ? (
+                          <>
+                            <ExternalLink className="h-4 w-4 mr-2" />
+                            Visit Site
+                          </>
+                        ) : (
+                          <>
+                            <Download className="h-4 w-4 mr-2" />
+                            Download
+                          </>
+                        )}
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </CardContent>

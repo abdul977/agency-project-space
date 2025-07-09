@@ -46,88 +46,90 @@ const NotificationDropdown = () => {
   return (
     <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="sm" className="relative">
-          <Bell className="h-4 w-4" />
+        <Button variant="ghost" size="sm" className="relative p-1.5 sm:p-2">
+          <Bell className="h-3 w-3 sm:h-4 sm:w-4" />
           {unreadCount > 0 && (
-            <Badge 
-              variant="destructive" 
-              className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs"
+            <Badge
+              variant="destructive"
+              className="absolute -top-0.5 -right-0.5 sm:-top-1 sm:-right-1 h-4 w-4 sm:h-5 sm:w-5 flex items-center justify-center p-0 text-xs"
             >
               {unreadCount > 9 ? '9+' : unreadCount}
             </Badge>
           )}
         </Button>
       </DropdownMenuTrigger>
-      
-      <DropdownMenuContent align="end" className="w-80">
-        <DropdownMenuLabel className="flex items-center justify-between">
-          <span>Notifications</span>
+
+      <DropdownMenuContent align="end" className="w-72 sm:w-80 lg:w-96 max-w-[90vw]">
+        <DropdownMenuLabel className="flex items-center justify-between px-3 sm:px-4 py-2 sm:py-3">
+          <span className="text-sm sm:text-base font-medium">Notifications</span>
           {unreadCount > 0 && (
             <Button
               variant="ghost"
               size="sm"
               onClick={markAllAsRead}
-              className="h-auto p-1 text-xs"
+              className="h-auto p-1 text-xs sm:text-sm"
             >
-              <CheckCheck className="h-3 w-3 mr-1" />
-              Mark all read
+              <CheckCheck className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+              <span className="hidden sm:inline">Mark all read</span>
+              <span className="sm:hidden">Read all</span>
             </Button>
           )}
         </DropdownMenuLabel>
         
         <DropdownMenuSeparator />
-        
+
         {notifications.length === 0 ? (
-          <div className="p-4 text-center text-muted-foreground">
-            <Bell className="h-8 w-8 mx-auto mb-2 opacity-50" />
-            <p className="text-sm">No notifications yet</p>
+          <div className="p-3 sm:p-4 text-center text-muted-foreground">
+            <Bell className="h-6 w-6 sm:h-8 sm:w-8 mx-auto mb-2 opacity-50" />
+            <p className="text-xs sm:text-sm">No notifications yet</p>
           </div>
         ) : (
-          <ScrollArea className="h-96">
+          <ScrollArea className="h-80 sm:h-96 max-h-[60vh]">
             {notifications.map((notification) => (
               <DropdownMenuItem
                 key={notification.id}
-                className="flex flex-col items-start p-3 cursor-pointer hover:bg-muted/50"
+                className="flex flex-col items-start p-2 sm:p-3 cursor-pointer hover:bg-muted/50 border-b border-border-light last:border-b-0"
                 onClick={() => handleNotificationClick(notification)}
               >
-                <div className="flex items-start justify-between w-full">
-                  <div className="flex items-start space-x-2 flex-1">
-                    <span className="text-lg">
+                <div className="flex items-start justify-between w-full gap-2">
+                  <div className="flex items-start space-x-2 flex-1 min-w-0">
+                    <span className="text-base sm:text-lg shrink-0">
                       {getNotificationIcon(notification.type)}
                     </span>
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center space-x-2">
-                        <p className={`text-sm font-medium truncate ${
+                      <div className="flex items-center space-x-1 sm:space-x-2">
+                        <p className={`text-xs sm:text-sm font-medium truncate ${
                           notification.is_read ? 'text-muted-foreground' : 'text-foreground'
                         }`}>
                           {notification.title}
                         </p>
                         {!notification.is_read && (
-                          <div className="w-2 h-2 bg-primary rounded-full flex-shrink-0" />
+                          <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-primary rounded-full flex-shrink-0" />
                         )}
                       </div>
-                      <p className={`text-xs mt-1 ${
+                      <p className={`text-xs sm:text-sm mt-0.5 sm:mt-1 line-clamp-2 ${
                         notification.is_read ? 'text-muted-foreground' : 'text-muted-foreground'
                       }`}>
                         {notification.message}
                       </p>
-                      <p className="text-xs text-muted-foreground mt-1">
+                      <p className="text-xs text-muted-foreground mt-0.5 sm:mt-1">
                         {formatTime(notification.created_at)}
                       </p>
                     </div>
                   </div>
-                  
+
                   {!notification.is_read && (
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-auto p-1 ml-2"
+                      className="h-auto p-0.5 sm:p-1 ml-1 sm:ml-2 shrink-0"
                       onClick={(e) => {
                         e.stopPropagation();
                         markAsRead(notification.id);
                       }}
                     >
-                      <Check className="h-3 w-3" />
+                      <Check className="h-3 w-3 sm:h-4 sm:w-4" />
+                      <span className="sr-only">Mark as read</span>
                     </Button>
                   )}
                 </div>

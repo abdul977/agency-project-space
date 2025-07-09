@@ -162,103 +162,113 @@ const Dashboard = () => {
 
       {/* Desktop Header */}
       <header className="hidden lg:block border-b border-border-light bg-card">
-        <div className="container mx-auto px-4 py-4 max-w-full overflow-x-hidden">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <h1 className="text-2xl font-bold text-foreground">
+        <div className="container mx-auto px-4 py-3 lg:py-4 xl:py-6 max-w-full overflow-x-hidden">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center space-x-3 lg:space-x-4 min-w-0">
+              <h1 className="text-xl lg:text-2xl xl:text-3xl font-bold text-foreground truncate">
                 Muahib Solution
               </h1>
-              <Badge variant="secondary">
+              <Badge variant="secondary" className="text-xs lg:text-sm shrink-0">
                 Client Portal
               </Badge>
             </div>
 
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2 lg:space-x-4 shrink-0">
               <NotificationDropdown />
 
-              <div className="flex items-center space-x-3">
-                <Avatar className="h-8 w-8">
-                  <AvatarFallback className="bg-primary text-primary-foreground text-xs">
+              <div className="hidden xl:flex items-center space-x-3">
+                <Avatar className="h-8 w-8 lg:h-10 lg:w-10">
+                  <AvatarFallback className="bg-primary text-primary-foreground text-xs lg:text-sm">
                     {user?.full_name ? getInitials(user.full_name) : 'U'}
                   </AvatarFallback>
                 </Avatar>
-                <div>
-                  <p className="text-sm font-medium text-foreground">
+                <div className="min-w-0">
+                  <p className="text-sm lg:text-base font-medium text-foreground truncate">
                     {user?.full_name || 'User'}
                   </p>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs lg:text-sm text-muted-foreground truncate">
                     {user?.company_name}
                   </p>
                 </div>
               </div>
 
-              <Button variant="ghost" size="sm" onClick={handleLogout}>
-                <LogOut className="h-4 w-4 ml-2" />
-                Logout
+              {/* Compact user info for smaller desktop screens */}
+              <div className="xl:hidden">
+                <Avatar className="h-8 w-8">
+                  <AvatarFallback className="bg-primary text-primary-foreground text-xs">
+                    {user?.full_name ? getInitials(user.full_name) : 'U'}
+                  </AvatarFallback>
+                </Avatar>
+              </div>
+
+              <Button variant="ghost" size="sm" onClick={handleLogout} className="text-xs lg:text-sm">
+                <LogOut className="h-3 w-3 lg:h-4 lg:w-4 mr-1 lg:mr-2" />
+                <span className="hidden lg:inline">Logout</span>
+                <span className="lg:hidden">Exit</span>
               </Button>
             </div>
           </div>
         </div>
       </header>
 
-      <div className="container mx-auto px-4 py-8 pt-20 lg:pt-8 pb-20 lg:pb-8 max-w-full overflow-x-hidden">
-        <div className="grid lg:grid-cols-4 gap-8">
+      <div className="container mx-auto px-4 py-4 sm:py-6 lg:py-8 pt-16 sm:pt-20 lg:pt-8 pb-16 sm:pb-20 lg:pb-8 max-w-full overflow-x-hidden">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8">
           {/* Desktop Sidebar */}
           <div className="hidden lg:block lg:col-span-1">
             <Card className="border-border-light">
-              <CardHeader className="pb-4">
+              <CardHeader className="pb-3 lg:pb-4 xl:pb-6">
                 <div className="flex items-center space-x-3">
-                  <Avatar className="h-12 w-12">
-                    <AvatarFallback className="bg-primary text-primary-foreground">
+                  <Avatar className="h-10 w-10 xl:h-12 xl:w-12">
+                    <AvatarFallback className="bg-primary text-primary-foreground text-sm xl:text-base">
                       {user?.full_name ? getInitials(user.full_name) : 'U'}
                     </AvatarFallback>
                   </Avatar>
-                  <div>
-                    <h3 className="font-semibold text-foreground">
+                  <div className="min-w-0 flex-1">
+                    <h3 className="font-semibold text-foreground text-sm xl:text-base truncate">
                       {user?.full_name || 'User'}
                     </h3>
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-xs xl:text-sm text-muted-foreground truncate">
                       {user?.company_name}
                     </p>
                   </div>
                 </div>
               </CardHeader>
 
-              <CardContent className="space-y-2">
+              <CardContent className="space-y-1 lg:space-y-2 px-4 lg:px-6">
                 <Button
                   variant={activeTab === 'projects' ? 'default' : 'ghost'}
-                  className="w-full justify-start"
+                  className="w-full justify-start text-sm lg:text-base h-9 lg:h-10"
                   onClick={() => setActiveTab('projects')}
                 >
-                  <Folder className="h-4 w-4 mr-2" />
-                  Projects
+                  <Folder className="h-4 w-4 mr-2 shrink-0" />
+                  <span className="truncate">Projects</span>
                 </Button>
 
                 <Button
                   variant={activeTab === 'messages' ? 'default' : 'ghost'}
-                  className="w-full justify-start"
+                  className="w-full justify-start text-sm lg:text-base h-9 lg:h-10"
                   onClick={() => setActiveTab('messages')}
                 >
-                  <MessageSquare className="h-4 w-4 mr-2" />
-                  Messages
+                  <MessageSquare className="h-4 w-4 mr-2 shrink-0" />
+                  <span className="truncate">Messages</span>
                 </Button>
 
                 <Button
                   variant={activeTab === 'deliverables' ? 'default' : 'ghost'}
-                  className="w-full justify-start"
+                  className="w-full justify-start text-sm lg:text-base h-9 lg:h-10"
                   onClick={() => setActiveTab('deliverables')}
                 >
-                  <Package className="h-4 w-4 mr-2" />
-                  Deliverables
+                  <Package className="h-4 w-4 mr-2 shrink-0" />
+                  <span className="truncate">Deliverables</span>
                 </Button>
 
                 <Button
                   variant={activeTab === 'profile' ? 'default' : 'ghost'}
-                  className="w-full justify-start"
+                  className="w-full justify-start text-sm lg:text-base h-9 lg:h-10"
                   onClick={() => setActiveTab('profile')}
                 >
-                  <Settings className="h-4 w-4 mr-2" />
-                  Profile
+                  <Settings className="h-4 w-4 mr-2 shrink-0" />
+                  <span className="truncate">Profile</span>
                 </Button>
               </CardContent>
             </Card>
@@ -346,10 +356,10 @@ const Dashboard = () => {
             )}
 
             {activeTab === 'messages' && (
-              <div className="space-y-6">
-                <div>
-                  <h2 className="text-2xl font-bold text-foreground">Messages</h2>
-                  <p className="text-muted-foreground">
+              <div className="space-y-4 sm:space-y-6">
+                <div className="text-center sm:text-left">
+                  <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-foreground">Messages</h2>
+                  <p className="text-sm sm:text-base text-muted-foreground mt-1">
                     Communicate with the Muahib Solution team
                   </p>
                 </div>

@@ -226,15 +226,66 @@ const AdminDashboard = () => {
         </div>
       </header>
 
-      <div className="container mx-auto px-4 py-8">
-        <div className="grid lg:grid-cols-4 gap-8">
-          {/* Sidebar */}
+      <div className="container mx-auto px-4 py-4 sm:py-6 lg:py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8">
+          {/* Sidebar - Mobile: Horizontal scroll, Desktop: Vertical */}
           <div className="lg:col-span-1">
-            <Card className="border-border-light">
+            {/* Mobile Navigation - Horizontal Scroll */}
+            <div className="lg:hidden mb-4 sm:mb-6">
+              <div className="flex space-x-2 overflow-x-auto pb-2 scrollbar-hide">
+                <Button
+                  variant={activeTab === 'overview' ? 'default' : 'ghost'}
+                  className="flex-shrink-0 px-3 py-2 text-sm"
+                  onClick={() => setActiveTab('overview')}
+                >
+                  <BarChart3 className="h-4 w-4 mr-2" />
+                  Overview
+                </Button>
+
+                <Button
+                  variant={activeTab === 'clients' ? 'default' : 'ghost'}
+                  className="flex-shrink-0 px-3 py-2 text-sm"
+                  onClick={() => setActiveTab('clients')}
+                >
+                  <Users className="h-4 w-4 mr-2" />
+                  Clients
+                </Button>
+
+                <Button
+                  variant={activeTab === 'projects' ? 'default' : 'ghost'}
+                  className="flex-shrink-0 px-3 py-2 text-sm"
+                  onClick={() => setActiveTab('projects')}
+                >
+                  <FolderOpen className="h-4 w-4 mr-2" />
+                  Projects
+                </Button>
+
+                <Button
+                  variant={activeTab === 'messages' ? 'default' : 'ghost'}
+                  className="flex-shrink-0 px-3 py-2 text-sm"
+                  onClick={() => setActiveTab('messages')}
+                >
+                  <MessageSquare className="h-4 w-4 mr-2" />
+                  Messages
+                </Button>
+
+                <Button
+                  variant={activeTab === 'settings' ? 'default' : 'ghost'}
+                  className="flex-shrink-0 px-3 py-2 text-sm"
+                  onClick={() => setActiveTab('settings')}
+                >
+                  <Settings className="h-4 w-4 mr-2" />
+                  Settings
+                </Button>
+              </div>
+            </div>
+
+            {/* Desktop Navigation - Vertical Card */}
+            <Card className="hidden lg:block border-border-light">
               <CardHeader className="pb-4">
-                <CardTitle className="text-lg">Admin Menu</CardTitle>
+                <CardTitle className="text-lg xl:text-xl">Admin Menu</CardTitle>
               </CardHeader>
-              
+
               <CardContent className="space-y-2">
                 <Button
                   variant={activeTab === 'overview' ? 'default' : 'ghost'}
@@ -244,7 +295,7 @@ const AdminDashboard = () => {
                   <BarChart3 className="h-4 w-4 mr-2" />
                   Overview
                 </Button>
-                
+
                 <Button
                   variant={activeTab === 'clients' ? 'default' : 'ghost'}
                   className="w-full justify-start"
@@ -253,7 +304,7 @@ const AdminDashboard = () => {
                   <Users className="h-4 w-4 mr-2" />
                   Clients
                 </Button>
-                
+
                 <Button
                   variant={activeTab === 'projects' ? 'default' : 'ghost'}
                   className="w-full justify-start"
@@ -262,7 +313,7 @@ const AdminDashboard = () => {
                   <FolderOpen className="h-4 w-4 mr-2" />
                   Projects
                 </Button>
-                
+
                 <Button
                   variant={activeTab === 'messages' ? 'default' : 'ghost'}
                   className="w-full justify-start"
@@ -271,7 +322,7 @@ const AdminDashboard = () => {
                   <MessageSquare className="h-4 w-4 mr-2" />
                   Messages
                 </Button>
-                
+
                 <Button
                   variant={activeTab === 'settings' ? 'default' : 'ghost'}
                   className="w-full justify-start"
@@ -287,59 +338,59 @@ const AdminDashboard = () => {
           {/* Main Content */}
           <div className="lg:col-span-3">
             {activeTab === 'overview' && (
-              <div className="space-y-6">
-                <div>
-                  <h2 className="text-2xl font-bold text-foreground">Dashboard Overview</h2>
-                  <p className="text-muted-foreground">
+              <div className="space-y-4 sm:space-y-6">
+                <div className="text-center sm:text-left">
+                  <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-foreground">Dashboard Overview</h2>
+                  <p className="text-sm sm:text-base text-muted-foreground mt-1">
                     Monitor your client management system performance
                   </p>
                 </div>
 
                 {/* Stats Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
                   <Card className="border-border-light">
-                    <CardContent className="p-6">
-                      <div className="flex items-center space-x-2">
-                        <Users className="h-8 w-8 text-blue-600" />
-                        <div>
-                          <p className="text-2xl font-bold text-foreground">{stats.total_clients}</p>
-                          <p className="text-sm text-muted-foreground">Total Clients</p>
+                    <CardContent className="p-3 sm:p-4 lg:p-6">
+                      <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-3">
+                        <Users className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600 mx-auto sm:mx-0" />
+                        <div className="text-center sm:text-left">
+                          <p className="text-lg sm:text-xl lg:text-2xl font-bold text-foreground">{stats.total_clients}</p>
+                          <p className="text-xs sm:text-sm text-muted-foreground">Total Clients</p>
                         </div>
                       </div>
                     </CardContent>
                   </Card>
 
                   <Card className="border-border-light">
-                    <CardContent className="p-6">
-                      <div className="flex items-center space-x-2">
-                        <Clock className="h-8 w-8 text-yellow-600" />
-                        <div>
-                          <p className="text-2xl font-bold text-foreground">{stats.active_projects}</p>
-                          <p className="text-sm text-muted-foreground">Active Projects</p>
+                    <CardContent className="p-3 sm:p-4 lg:p-6">
+                      <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-3">
+                        <Clock className="h-6 w-6 sm:h-8 sm:w-8 text-yellow-600 mx-auto sm:mx-0" />
+                        <div className="text-center sm:text-left">
+                          <p className="text-lg sm:text-xl lg:text-2xl font-bold text-foreground">{stats.active_projects}</p>
+                          <p className="text-xs sm:text-sm text-muted-foreground">Active Projects</p>
                         </div>
                       </div>
                     </CardContent>
                   </Card>
 
                   <Card className="border-border-light">
-                    <CardContent className="p-6">
-                      <div className="flex items-center space-x-2">
-                        <CheckCircle className="h-8 w-8 text-green-600" />
-                        <div>
-                          <p className="text-2xl font-bold text-foreground">{stats.completed_projects}</p>
-                          <p className="text-sm text-muted-foreground">Completed</p>
+                    <CardContent className="p-3 sm:p-4 lg:p-6">
+                      <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-3">
+                        <CheckCircle className="h-6 w-6 sm:h-8 sm:w-8 text-green-600 mx-auto sm:mx-0" />
+                        <div className="text-center sm:text-left">
+                          <p className="text-lg sm:text-xl lg:text-2xl font-bold text-foreground">{stats.completed_projects}</p>
+                          <p className="text-xs sm:text-sm text-muted-foreground">Completed</p>
                         </div>
                       </div>
                     </CardContent>
                   </Card>
 
                   <Card className="border-border-light">
-                    <CardContent className="p-6">
-                      <div className="flex items-center space-x-2">
-                        <MessageSquare className="h-8 w-8 text-purple-600" />
-                        <div>
-                          <p className="text-2xl font-bold text-foreground">{stats.new_messages}</p>
-                          <p className="text-sm text-muted-foreground">New Messages</p>
+                    <CardContent className="p-3 sm:p-4 lg:p-6">
+                      <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-3">
+                        <MessageSquare className="h-6 w-6 sm:h-8 sm:w-8 text-purple-600 mx-auto sm:mx-0" />
+                        <div className="text-center sm:text-left">
+                          <p className="text-lg sm:text-xl lg:text-2xl font-bold text-foreground">{stats.new_messages}</p>
+                          <p className="text-xs sm:text-sm text-muted-foreground">New Messages</p>
                         </div>
                       </div>
                     </CardContent>
@@ -348,40 +399,81 @@ const AdminDashboard = () => {
 
                 {/* Recent Activity */}
                 <Card className="border-border-light">
-                  <CardHeader>
-                    <CardTitle>Recent Client Activity</CardTitle>
-                    <CardDescription>
+                  <CardHeader className="pb-4 sm:pb-6">
+                    <CardTitle className="text-lg sm:text-xl lg:text-2xl">Recent Client Activity</CardTitle>
+                    <CardDescription className="text-sm">
                       Latest updates from your clients
                     </CardDescription>
                   </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
+                  <CardContent className="px-4 sm:px-6">
+                    <div className="space-y-3 sm:space-y-4">
                       {clients.slice(0, 5).map((client) => (
-                        <div key={client.id} className="flex items-center space-x-4 p-3 rounded-lg bg-muted/30">
-                          <Avatar className="h-10 w-10">
-                            <AvatarFallback className="bg-primary text-primary-foreground">
+                        <div key={client.id} className="flex items-start sm:items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-lg bg-muted/30">
+                          {/* Avatar */}
+                          <Avatar className="h-8 w-8 sm:h-10 sm:w-10 shrink-0 mt-0.5 sm:mt-0">
+                            <AvatarFallback className="bg-primary text-primary-foreground text-xs sm:text-sm">
                               {client.full_name ? getInitials(client.full_name) : 'U'}
                             </AvatarFallback>
                           </Avatar>
-                          <div className="flex-1">
-                            <p className="font-medium text-foreground">
-                              {client.full_name || 'Unknown User'}
-                            </p>
-                            <p className="text-sm text-muted-foreground">
-                              {client.company_name} • {client.project_count} projects
-                            </p>
+
+                          {/* Client Info - Mobile Layout */}
+                          <div className="flex-1 min-w-0 sm:hidden">
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="min-w-0 flex-1">
+                                <p className="font-medium text-foreground text-sm truncate">
+                                  {client.full_name || 'Unknown User'}
+                                </p>
+                                <p className="text-xs text-muted-foreground truncate">
+                                  {client.company_name} • {client.project_count} projects
+                                </p>
+                              </div>
+                              <div className="flex items-center gap-2 shrink-0">
+                                {client.has_new_content && (
+                                  <Badge variant="secondary" className="bg-green-100 text-green-800 text-xs px-1.5 py-0.5">
+                                    NEW
+                                  </Badge>
+                                )}
+                                <Button variant="outline" size="sm" asChild className="h-7 w-7 p-0">
+                                  <Link to={`/admin/client/${client.id}`}>
+                                    <Eye className="h-3.5 w-3.5" />
+                                    <span className="sr-only">View {client.full_name}</span>
+                                  </Link>
+                                </Button>
+                              </div>
+                            </div>
                           </div>
-                          {client.has_new_content && (
-                            <Badge variant="secondary" className="bg-green-100 text-green-800">
-                              NEW
-                            </Badge>
-                          )}
-                          <Button variant="outline" size="sm" asChild>
-                            <Link to={`/admin/client/${client.id}`}>
-                              <Eye className="h-4 w-4 mr-2" />
-                              View
-                            </Link>
-                          </Button>
+
+                          {/* Client Info - Desktop Layout */}
+                          <div className="hidden sm:flex sm:flex-1 sm:items-center sm:gap-4">
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium text-foreground truncate">
+                                {client.full_name || 'Unknown User'}
+                              </p>
+                              <p className="text-sm text-muted-foreground truncate">
+                                {client.company_name} • {client.project_count} projects
+                              </p>
+                            </div>
+
+                            <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+                              {client.has_new_content && (
+                                <Badge variant="secondary" className="bg-green-100 text-green-800 hidden md:inline-flex">
+                                  NEW
+                                </Badge>
+                              )}
+                              <Button variant="outline" size="sm" asChild className="hidden lg:inline-flex">
+                                <Link to={`/admin/client/${client.id}`}>
+                                  <Eye className="h-4 w-4 mr-2" />
+                                  View
+                                </Link>
+                              </Button>
+                              <Button variant="outline" size="sm" asChild className="lg:hidden h-8 w-8 p-0">
+                                <Link to={`/admin/client/${client.id}`}>
+                                  <Eye className="h-4 w-4" />
+                                  <span className="sr-only">View {client.full_name}</span>
+                                </Link>
+                              </Button>
+                            </div>
+                          </div>
                         </div>
                       ))}
                     </div>
