@@ -25,7 +25,10 @@ import {
   Calendar,
   User,
   Building2,
-  AlertTriangle
+  AlertTriangle,
+  Edit,
+  Check,
+  X
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -73,6 +76,10 @@ const ProjectDetail = () => {
   const [isCreatingFolder, setIsCreatingFolder] = useState(false);
   const [deleteFolderId, setDeleteFolderId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [editingFolderId, setEditingFolderId] = useState<string | null>(null);
+  const [editingFolderName, setEditingFolderName] = useState('');
+  const [editingInputId, setEditingInputId] = useState<string | null>(null);
+  const [editingInputContent, setEditingInputContent] = useState('');
 
   // Fetch project and folders
   useEffect(() => {
@@ -406,6 +413,132 @@ const ProjectDetail = () => {
     }
   };
 
+  const startEditingFolder = (folder: Folder) => {
+    setEditingFolderId(folder.id);
+    setEditingFolderName(folder.name);
+  };
+
+  const cancelEditingFolder = () => {
+    setEditingFolderId(null);
+    setEditingFolderName('');
+  };
+
+  const saveFolderName = async (folderId: string) => {
+    if (!user || !editingFolderName.trim()) return;
+
+    try {
+      const { error } = await supabase
+        .from('folders')
+        .update({
+          name: editingFolderName.trim(),
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', folderId);
+
+      if (error) {
+        console.error('Error updating folder name:', error);
+        toast({
+          title: "Error",
+          description: "Failed to update folder name",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Update local state
+      setFolders(prev => prev.map(f =>
+        f.id === folderId
+          ? { ...f, name: editingFolderName.trim() }
+          : f
+      ));
+
+      setEditingFolderId(null);
+      setEditingFolderName('');
+
+      toast({
+        title: "Folder updated",
+        description: "Folder name has been updated successfully",
+      });
+
+    } catch (error) {
+      console.error('Error updating folder name:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update folder name",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const startEditingInput = (input: FolderInput) => {
+    setEditingInputId(input.id);
+    setEditingInputContent(input.content);
+  };
+
+  const cancelEditingInput = () => {
+    setEditingInputId(null);
+    setEditingInputContent('');
+  };
+
+  const saveInputContent = async (inputId: string) => {
+    if (!user || !editingInputContent.trim()) return;
+
+    try {
+      const { error } = await supabase
+        .from('folder_inputs')
+        .update({
+          content: editingInputContent.trim(),
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', inputId);
+
+      if (error) {
+        console.error('Error updating input content:', error);
+        toast({
+          title: "Error",
+          description: "Failed to update input content",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Update local state
+      setFolders(prev => prev.map(folder => ({
+        ...folder,
+        inputs: folder.inputs.map(input =>
+          input.id === inputId
+            ? { ...input, content: editingInputContent.trim() }
+            : input
+        )
+      })));
+
+      setEditingInputId(null);
+      setEditingInputContent('');
+
+      toast({
+        title: "Input updated",
+        description: "Input content has been updated successfully",
+      });
+
+      // Notify admin of client update
+      if (project && user) {
+        await notifyAdminOfClientUpdate(
+          user.full_name || 'Client',
+          project.name,
+          'input_updated'
+        );
+      }
+
+    } catch (error) {
+      console.error('Error updating input content:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update input content",
+        variant: "destructive",
+      });
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -525,10 +658,56 @@ const ProjectDetail = () => {
                 <Card key={folder.id} className="border-border-light">
                   <CardHeader className="pb-4 sm:pb-6">
                     <div className="flex items-center justify-between">
-                      <CardTitle className="flex items-center space-x-2 text-wrap text-base sm:text-lg lg:text-xl">
+                      <div className="flex items-center gap-2 flex-1 min-w-0">
                         <Folder className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
-                        <span className="text-wrap break-words min-w-0">{folder.name}</span>
-                      </CardTitle>
+                        {editingFolderId === folder.id ? (
+                          <div className="flex items-center gap-2 flex-1">
+                            <Input
+                              value={editingFolderName}
+                              onChange={(e) => setEditingFolderName(e.target.value)}
+                              className="flex-1"
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  saveFolderName(folder.id);
+                                } else if (e.key === 'Escape') {
+                                  cancelEditingFolder();
+                                }
+                              }}
+                              autoFocus
+                            />
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => saveFolderName(folder.id)}
+                              className="text-green-600 hover:text-green-700"
+                            >
+                              <Check className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={cancelEditingFolder}
+                              className="text-gray-600 hover:text-gray-700"
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        ) : (
+                          <>
+                            <CardTitle className="text-wrap text-base sm:text-lg lg:text-xl flex-1 min-w-0">
+                              <span className="text-wrap break-words">{folder.name}</span>
+                            </CardTitle>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => startEditingFolder(folder)}
+                              className="text-gray-600 hover:text-gray-700 p-1"
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                          </>
+                        )}
+                      </div>
                       <Button
                         variant="outline"
                         size="sm"
@@ -547,20 +726,70 @@ const ProjectDetail = () => {
                     {folder.inputs.map((input, index) => (
                       <div key={input.id} className="flex flex-col sm:flex-row gap-3 sm:gap-2">
                         <div className="flex-1 min-w-0 container-safe">
-                          <Textarea
-                            placeholder={`Requirement ${index + 1}...`}
-                            value={input.content}
-                            onChange={(e) => updateInput(input.id, e.target.value)}
-                            className="min-h-[60px] sm:min-h-[80px] w-full max-w-full resize-none border-input-border focus:border-ring text-wrap-anywhere text-sm sm:text-base"
-                            style={{
-                              wordWrap: 'break-word',
-                              overflowWrap: 'break-word',
-                              wordBreak: 'break-word',
-                              whiteSpace: 'pre-wrap',
-                              overflow: 'hidden',
-                              maxWidth: '100%'
-                            }}
-                          />
+                          {editingInputId === input.id ? (
+                            <div className="space-y-2">
+                              <Textarea
+                                placeholder={`Requirement ${index + 1}...`}
+                                value={editingInputContent}
+                                onChange={(e) => setEditingInputContent(e.target.value)}
+                                className="min-h-[60px] sm:min-h-[80px] w-full max-w-full resize-none border-input-border focus:border-ring text-wrap-anywhere text-sm sm:text-base"
+                                style={{
+                                  wordWrap: 'break-word',
+                                  overflowWrap: 'break-word',
+                                  wordBreak: 'break-word',
+                                  whiteSpace: 'pre-wrap',
+                                  overflow: 'hidden',
+                                  maxWidth: '100%'
+                                }}
+                                autoFocus
+                              />
+                              <div className="flex gap-2">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => saveInputContent(input.id)}
+                                  className="text-green-600 hover:text-green-700"
+                                >
+                                  <Check className="h-4 w-4 mr-2" />
+                                  Save
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={cancelEditingInput}
+                                  className="text-gray-600 hover:text-gray-700"
+                                >
+                                  <X className="h-4 w-4 mr-2" />
+                                  Cancel
+                                </Button>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="relative group">
+                              <Textarea
+                                placeholder={`Requirement ${index + 1}...`}
+                                value={input.content}
+                                onChange={(e) => updateInput(input.id, e.target.value)}
+                                className="min-h-[60px] sm:min-h-[80px] w-full max-w-full resize-none border-input-border focus:border-ring text-wrap-anywhere text-sm sm:text-base"
+                                style={{
+                                  wordWrap: 'break-word',
+                                  overflowWrap: 'break-word',
+                                  wordBreak: 'break-word',
+                                  whiteSpace: 'pre-wrap',
+                                  overflow: 'hidden',
+                                  maxWidth: '100%'
+                                }}
+                              />
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => startEditingInput(input)}
+                                className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity text-gray-600 hover:text-gray-700 p-1"
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          )}
                         </div>
                         <Button
                           variant="outline"

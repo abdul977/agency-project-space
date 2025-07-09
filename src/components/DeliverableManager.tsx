@@ -381,7 +381,24 @@ const DeliverableManager: React.FC<DeliverableManagerProps> = ({
             console.error('Error uploading file:', uploadError);
             toast({
               title: "Upload Error",
-              description: "Failed to upload file. Please try again.",
+              description: `Failed to upload file: ${uploadError.message}`,
+              variant: "destructive",
+            });
+            return;
+          }
+
+          // Verify the file was uploaded successfully by trying to create a signed URL
+          const { data: testSignedUrl, error: testSignedError } = await supabase.storage
+            .from('deliverables')
+            .createSignedUrl(filePath, 60); // Short test URL
+
+          if (testSignedError) {
+            console.error('Error verifying file upload:', testSignedError);
+            // Try to clean up the potentially failed upload
+            await supabase.storage.from('deliverables').remove([filePath]);
+            toast({
+              title: "Upload Verification Failed",
+              description: "File upload could not be verified. Please try again.",
               variant: "destructive",
             });
             return;
@@ -527,6 +544,17 @@ const DeliverableManager: React.FC<DeliverableManagerProps> = ({
 
     if (deliverable.deliverable_type === 'file' && deliverable.file_path) {
       try {
+        // First check if the file exists in storage
+        const { error: listError } = await supabase.storage
+          .from('deliverables')
+          .list('', {
+            search: deliverable.file_path.split('/').pop() // Get just the filename
+          });
+
+        if (listError) {
+          console.error('Error checking file existence:', listError);
+        }
+
         // Generate signed URL for secure download
         const { data: signedUrlData, error: signedUrlError } = await supabase.storage
           .from('deliverables')
@@ -534,11 +562,21 @@ const DeliverableManager: React.FC<DeliverableManagerProps> = ({
 
         if (signedUrlError) {
           console.error('Error creating signed URL:', signedUrlError);
-          toast({
-            title: "Download Error",
-            description: "Failed to generate download link",
-            variant: "destructive",
-          });
+
+          // Check if it's a "Object not found" error
+          if (signedUrlError.message?.includes('Object not found')) {
+            toast({
+              title: "File Not Found",
+              description: "The file is no longer available for download. Please re-upload the file.",
+              variant: "destructive",
+            });
+          } else {
+            toast({
+              title: "Download Error",
+              description: `Failed to generate download link: ${signedUrlError.message}`,
+              variant: "destructive",
+            });
+          }
           return;
         }
 
@@ -559,7 +597,18 @@ const DeliverableManager: React.FC<DeliverableManagerProps> = ({
         console.error('Error downloading file:', error);
         toast({
           title: "Download Error",
-          description: "Failed to download file",
+          description: "Failed to download file. Please try again or re-upload the file.",
+          variant: "destructive",
+        });
+      }
+    } else {
+      // Handle URL deliverables or missing file path
+      if (deliverable.deliverable_url) {
+        window.open(deliverable.deliverable_url, '_blank');
+      } else {
+        toast({
+          title: "Download Unavailable",
+          description: "This deliverable doesn't have a valid download link.",
           variant: "destructive",
         });
       }

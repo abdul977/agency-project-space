@@ -248,18 +248,39 @@ const ClientDeliverables = () => {
       window.open(url, '_blank');
     } else if (type === 'file' && filePath) {
       try {
-        // Generate signed URL for secure download
+        // First check if the file exists in storage
+        const { error: listError } = await supabase.storage
+          .from('deliverables')
+          .list('', {
+            search: filePath.split('/').pop() // Get just the filename
+          });
+
+        if (listError) {
+          console.error('Error checking file existence:', listError);
+        }
+
+        // Try to generate signed URL for secure download
         const { data: signedUrlData, error: signedUrlError } = await supabase.storage
           .from('deliverables')
           .createSignedUrl(filePath, 3600); // 1 hour expiry
 
         if (signedUrlError) {
           console.error('Error creating signed URL:', signedUrlError);
-          toast({
-            title: "Download Error",
-            description: "Failed to generate download link",
-            variant: "destructive",
-          });
+
+          // Check if it's a "Object not found" error
+          if (signedUrlError.message?.includes('Object not found')) {
+            toast({
+              title: "File Not Found",
+              description: "The file is no longer available for download. Please contact support.",
+              variant: "destructive",
+            });
+          } else {
+            toast({
+              title: "Download Error",
+              description: `Failed to generate download link: ${signedUrlError.message}`,
+              variant: "destructive",
+            });
+          }
           return;
         }
 
@@ -280,10 +301,17 @@ const ClientDeliverables = () => {
         console.error('Error downloading file:', error);
         toast({
           title: "Download Error",
-          description: "Failed to download file",
+          description: "Failed to download file. Please try again or contact support.",
           variant: "destructive",
         });
       }
+    } else {
+      // No valid file path or URL found
+      toast({
+        title: "Download Unavailable",
+        description: "This deliverable doesn't have a valid download link.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -448,19 +476,20 @@ const ClientDeliverables = () => {
                     />
                     <div className="flex items-start justify-between gap-2 flex-1">
                       <div className="flex items-center space-x-2 min-w-0 flex-1">
-                      {getDeliverableType(deliverable) === 'url' ? (
-                        <Globe className="h-4 w-4 text-blue-500 shrink-0" />
-                      ) : (
-                        <FileText className="h-4 w-4 text-green-500 shrink-0" />
-                      )}
-                      <h3 className="font-semibold text-foreground text-sm truncate">
-                        {deliverable.title}
-                      </h3>
+                        {getDeliverableType(deliverable) === 'url' ? (
+                          <Globe className="h-4 w-4 text-blue-500 shrink-0" />
+                        ) : (
+                          <FileText className="h-4 w-4 text-green-500 shrink-0" />
+                        )}
+                        <h3 className="font-semibold text-foreground text-sm truncate">
+                          {deliverable.title}
+                        </h3>
+                      </div>
+                      <Badge variant="default" className="bg-green-100 text-green-800 text-xs shrink-0">
+                        <CheckCircle className="h-3 w-3 mr-1" />
+                        Delivered
+                      </Badge>
                     </div>
-                    <Badge variant="default" className="bg-green-100 text-green-800 text-xs shrink-0">
-                      <CheckCircle className="h-3 w-3 mr-1" />
-                      Delivered
-                    </Badge>
                   </div>
 
                   <div className="space-y-2">
@@ -567,6 +596,7 @@ const ClientDeliverables = () => {
                       <div className="flex items-center text-sm text-muted-foreground">
                         <Calendar className="h-3 w-3 mr-1" />
                         Delivered {(deliverable.sent_at || deliverable.delivered_at) ? formatDate(deliverable.sent_at || deliverable.delivered_at!) : 'Unknown'}
+                      </div>
                       </div>
                     </div>
 

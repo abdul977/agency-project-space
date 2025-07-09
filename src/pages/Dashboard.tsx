@@ -32,7 +32,9 @@ import {
   Trash2,
   AlertTriangle,
   Filter,
-  X
+  X,
+  Edit,
+  Check
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -66,6 +68,8 @@ const Dashboard = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [sortBy, setSortBy] = useState<string>('updated_at');
+  const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
+  const [editingProjectName, setEditingProjectName] = useState('');
 
   // Fetch user projects
   const fetchProjects = async () => {
@@ -146,6 +150,64 @@ const Dashboard = () => {
     setSearchTerm('');
     setStatusFilter('all');
     setSortBy('updated_at');
+  };
+
+  const startEditingProject = (project: Project) => {
+    setEditingProjectId(project.id);
+    setEditingProjectName(project.name);
+  };
+
+  const cancelEditingProject = () => {
+    setEditingProjectId(null);
+    setEditingProjectName('');
+  };
+
+  const saveProjectName = async (projectId: string) => {
+    if (!user || !editingProjectName.trim()) return;
+
+    try {
+      const { error } = await supabase
+        .from('projects')
+        .update({
+          name: editingProjectName.trim(),
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', projectId)
+        .eq('user_id', user.id); // Security check
+
+      if (error) {
+        console.error('Error updating project name:', error);
+        toast({
+          title: "Error",
+          description: "Failed to update project name",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Update local state
+      setProjects(prev => prev.map(p =>
+        p.id === projectId
+          ? { ...p, name: editingProjectName.trim(), updated_at: new Date().toISOString() }
+          : p
+      ));
+
+      setEditingProjectId(null);
+      setEditingProjectName('');
+
+      toast({
+        title: "Project updated",
+        description: "Project name has been updated successfully",
+      });
+
+    } catch (error) {
+      console.error('Error updating project name:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update project name",
+        variant: "destructive",
+      });
+    }
   };
 
   const deleteProject = async (projectId: string) => {
@@ -543,9 +605,55 @@ const Dashboard = () => {
                           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                             <div className="flex-1">
                               <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-3 mb-2">
-                                <h3 className="text-lg font-semibold text-foreground text-wrap">
-                                  {project.name}
-                                </h3>
+                                <div className="flex items-center gap-2 flex-1">
+                                  {editingProjectId === project.id ? (
+                                    <div className="flex items-center gap-2 flex-1">
+                                      <Input
+                                        value={editingProjectName}
+                                        onChange={(e) => setEditingProjectName(e.target.value)}
+                                        className="flex-1"
+                                        onKeyDown={(e) => {
+                                          if (e.key === 'Enter') {
+                                            saveProjectName(project.id);
+                                          } else if (e.key === 'Escape') {
+                                            cancelEditingProject();
+                                          }
+                                        }}
+                                        autoFocus
+                                      />
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => saveProjectName(project.id)}
+                                        className="text-green-600 hover:text-green-700"
+                                      >
+                                        <Check className="h-4 w-4" />
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={cancelEditingProject}
+                                        className="text-gray-600 hover:text-gray-700"
+                                      >
+                                        <X className="h-4 w-4" />
+                                      </Button>
+                                    </div>
+                                  ) : (
+                                    <>
+                                      <h3 className="text-lg font-semibold text-foreground text-wrap flex-1">
+                                        {project.name}
+                                      </h3>
+                                      <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        onClick={() => startEditingProject(project)}
+                                        className="text-gray-600 hover:text-gray-700 p-1"
+                                      >
+                                        <Edit className="h-4 w-4" />
+                                      </Button>
+                                    </>
+                                  )}
+                                </div>
                                 <Badge className={getStatusColor(project.status)}>
                                   {getStatusText(project.status)}
                                 </Badge>
