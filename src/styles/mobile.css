@@ -1,0 +1,245 @@
+/* Mobile-first responsive utilities */
+
+/* Global text overflow fixes */
+* {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+/* Prevent horizontal overflow */
+html, body {
+  overflow-x: hidden;
+}
+
+/* Text container fixes */
+.text-container {
+  word-break: break-word;
+  overflow-wrap: break-word;
+  hyphens: auto;
+  max-width: 100%;
+}
+
+/* Input and textarea fixes */
+input, textarea, select {
+  word-break: break-word;
+  overflow-wrap: break-word;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+/* Card content fixes */
+.card-content {
+  word-break: break-word;
+  overflow-wrap: break-word;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+/* Ensure proper viewport handling */
+@media (max-width: 768px) {
+  /* Container adjustments for mobile */
+  .container {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  /* Navigation improvements */
+  .mobile-nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 50;
+    background: white;
+    border-bottom: 1px solid #e5e7eb;
+  }
+
+  /* Card spacing on mobile */
+  .mobile-card-spacing {
+    margin-bottom: 1rem;
+  }
+
+  /* Form improvements */
+  .mobile-form-spacing {
+    gap: 1rem;
+  }
+
+  /* Button improvements */
+  .mobile-button-full {
+    width: 100%;
+  }
+
+  /* Table responsiveness */
+  .mobile-table-scroll {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Text sizing for mobile */
+  .mobile-text-sm {
+    font-size: 0.875rem;
+  }
+
+  .mobile-text-xs {
+    font-size: 0.75rem;
+  }
+
+  /* Spacing adjustments */
+  .mobile-p-4 {
+    padding: 1rem;
+  }
+
+  .mobile-p-2 {
+    padding: 0.5rem;
+  }
+
+  .mobile-m-2 {
+    margin: 0.5rem;
+  }
+
+  /* Grid adjustments */
+  .mobile-grid-1 {
+    grid-template-columns: 1fr;
+  }
+
+  /* Flex adjustments */
+  .mobile-flex-col {
+    flex-direction: column;
+  }
+
+  .mobile-space-y-2 > * + * {
+    margin-top: 0.5rem;
+  }
+
+  .mobile-space-y-4 > * + * {
+    margin-top: 1rem;
+  }
+
+  /* Modal adjustments */
+  .mobile-modal {
+    margin: 1rem;
+    max-height: calc(100vh - 2rem);
+    overflow-y: auto;
+  }
+
+  /* Sidebar adjustments */
+  .mobile-sidebar-hidden {
+    display: none;
+  }
+
+  .mobile-sidebar-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 40;
+  }
+
+  /* Input improvements */
+  .mobile-input-lg {
+    padding: 0.75rem;
+    font-size: 1rem;
+  }
+
+  /* Avatar sizing */
+  .mobile-avatar-sm {
+    width: 2rem;
+    height: 2rem;
+  }
+
+  /* Badge adjustments */
+  .mobile-badge-sm {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+  }
+}
+
+/* Tablet adjustments */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .tablet-grid-2 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .tablet-p-6 {
+    padding: 1.5rem;
+  }
+}
+
+/* Touch-friendly improvements */
+@media (hover: none) and (pointer: coarse) {
+  /* Larger touch targets */
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Button improvements for touch */
+  button, .button {
+    min-height: 44px;
+    padding: 0.75rem 1rem;
+  }
+
+  /* Input improvements for touch */
+  input, textarea, select {
+    min-height: 44px;
+    padding: 0.75rem;
+    font-size: 16px; /* Prevents zoom on iOS */
+  }
+
+  /* Link improvements */
+  a {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+  }
+}
+
+/* Landscape phone adjustments */
+@media (max-width: 768px) and (orientation: landscape) {
+  .landscape-h-screen {
+    height: 100vh;
+  }
+
+  .landscape-overflow-y-auto {
+    overflow-y: auto;
+  }
+}
+
+/* High DPI displays */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  .high-dpi-border {
+    border-width: 0.5px;
+  }
+}
+
+/* Accessibility improvements */
+@media (prefers-reduced-motion: reduce) {
+  .motion-reduce {
+    animation: none;
+    transition: none;
+  }
+}
+
+/* Dark mode considerations for mobile */
+@media (prefers-color-scheme: dark) {
+  .mobile-dark-bg {
+    background-color: #1f2937;
+  }
+
+  .mobile-dark-text {
+    color: #f9fafb;
+  }
+}
+
+/* Print styles */
+@media print {
+  .print-hidden {
+    display: none;
+  }
+
+  .print-block {
+    display: block;
+  }
+}

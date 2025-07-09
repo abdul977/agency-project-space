@@ -4,6 +4,84 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Import mobile-specific styles */
+@import './styles/mobile.css';
+
+/* Global text overflow prevention */
+@layer base {
+  * {
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+  }
+
+  html, body {
+    overflow-x: hidden;
+  }
+
+  /* Ensure all containers respect boundaries */
+  .container, [class*="container"] {
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
+  /* Text elements */
+  p, span, div, h1, h2, h3, h4, h5, h6 {
+    word-break: break-word;
+    overflow-wrap: break-word;
+    hyphens: auto;
+  }
+
+  /* Form elements */
+  input, textarea, select {
+    max-width: 100%;
+    box-sizing: border-box;
+    word-break: break-word;
+    overflow-wrap: break-word;
+  }
+
+  /* Card components */
+  [class*="card"] {
+    overflow: hidden;
+    word-break: break-word;
+    overflow-wrap: break-word;
+  }
+}
+
+/* Utility classes for text overflow prevention */
+@layer utilities {
+  .text-wrap {
+    word-break: break-word;
+    overflow-wrap: break-word;
+    hyphens: auto;
+  }
+
+  .text-wrap-anywhere {
+    word-break: break-word;
+    overflow-wrap: anywhere;
+    hyphens: auto;
+  }
+
+  .container-safe {
+    max-width: 100%;
+    overflow-x: hidden;
+    word-break: break-word;
+    overflow-wrap: break-word;
+  }
+
+  .no-overflow {
+    overflow-x: hidden;
+    max-width: 100%;
+  }
+
+  .text-container-safe {
+    word-break: break-word;
+    overflow-wrap: break-word;
+    hyphens: auto;
+    max-width: 100%;
+    overflow: hidden;
+  }
+}
+
 /* Muahib Solution Design System - Clean White & Black Whitespace Theme */
 
 @layer base {

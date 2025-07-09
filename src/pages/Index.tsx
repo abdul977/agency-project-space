@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { 
@@ -89,8 +90,12 @@ const Index = () => {
               <a href="#features" className="text-muted-foreground hover:text-foreground transition-colors">Features</a>
               <a href="#services" className="text-muted-foreground hover:text-foreground transition-colors">Services</a>
               <a href="#about" className="text-muted-foreground hover:text-foreground transition-colors">About</a>
-              <Button variant="outline" size="sm">Login</Button>
-              <Button variant="hero" size="sm">Get Started</Button>
+              <Button variant="outline" size="sm" asChild>
+                <Link to="/login">Login</Link>
+              </Button>
+              <Button variant="hero" size="sm" asChild>
+                <Link to="/signup">Get Started</Link>
+              </Button>
             </div>
 
             {/* Mobile Menu Button */}
@@ -114,8 +119,12 @@ const Index = () => {
                 <a href="#services" className="text-muted-foreground hover:text-foreground transition-colors">Services</a>
                 <a href="#about" className="text-muted-foreground hover:text-foreground transition-colors">About</a>
                 <div className="flex flex-col space-y-2 pt-4">
-                  <Button variant="outline" size="sm">Login</Button>
-                  <Button variant="hero" size="sm">Get Started</Button>
+                  <Button variant="outline" size="sm" asChild>
+                    <Link to="/login">Login</Link>
+                  </Button>
+                  <Button variant="hero" size="sm" asChild>
+                    <Link to="/signup">Get Started</Link>
+                  </Button>
                 </div>
               </div>
             </div>
@@ -141,12 +150,16 @@ const Index = () => {
               </div>
 
               <div className="flex flex-col sm:flex-row gap-4">
-                <Button variant="hero" size="xl" className="group">
-                  Start Managing Clients
-                  <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
+                <Button variant="hero" size="xl" className="group" asChild>
+                  <Link to="/signup">
+                    Start Managing Clients
+                    <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
+                  </Link>
                 </Button>
-                <Button variant="outline" size="xl">
-                  Watch Demo
+                <Button variant="outline" size="xl" asChild>
+                  <Link to="/login">
+                    Client Login
+                  </Link>
                 </Button>
               </div>
 
@@ -316,9 +329,11 @@ const Index = () => {
               to manage their client relationships professionally and efficiently.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button variant="floating" size="xl" className="group">
-                Start Free Trial
-                <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
+              <Button variant="floating" size="xl" className="group" asChild>
+                <Link to="/signup">
+                  Start Free Trial
+                  <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
+                </Link>
               </Button>
               <Button variant="outline" size="xl" className="border-primary-foreground/20 text-primary-foreground hover:bg-primary-foreground/10">
                 Contact Sales
