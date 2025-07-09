@@ -40,31 +40,49 @@ export type Database = {
       }
       deliverables: {
         Row: {
-          content: string
+          content: string | null
           created_at: string | null
+          deliverable_type: string | null
+          deliverable_url: string | null
           delivered_at: string | null
+          description: string | null
+          file_path: string | null
           id: string
+          is_sent: boolean | null
           project_id: string
+          sent_at: string | null
           title: string
-          type: string
+          type: string | null
         }
         Insert: {
-          content: string
+          content?: string | null
           created_at?: string | null
+          deliverable_type?: string | null
+          deliverable_url?: string | null
           delivered_at?: string | null
+          description?: string | null
+          file_path?: string | null
           id?: string
+          is_sent?: boolean | null
           project_id: string
+          sent_at?: string | null
           title: string
-          type: string
+          type?: string | null
         }
         Update: {
-          content?: string
+          content?: string | null
           created_at?: string | null
+          deliverable_type?: string | null
+          deliverable_url?: string | null
           delivered_at?: string | null
+          description?: string | null
+          file_path?: string | null
           id?: string
+          is_sent?: boolean | null
           project_id?: string
+          sent_at?: string | null
           title?: string
-          type?: string
+          type?: string | null
         }
         Relationships: [
           {
@@ -937,7 +955,36 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      message_conversations: {
+        Row: {
+          content: string | null
+          created_at: string | null
+          id: string | null
+          is_read: boolean | null
+          receiver_id: string | null
+          receiver_is_admin: boolean | null
+          receiver_name: string | null
+          sender_id: string | null
+          sender_is_admin: boolean | null
+          sender_name: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_receiver_id_fkey"
+            columns: ["receiver_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       authenticate_user: {
@@ -953,6 +1000,10 @@ export type Database = {
       debug_jwt_claims: {
         Args: Record<PropertyKey, never>
         Returns: Json
+      }
+      get_admin_user_id: {
+        Args: Record<PropertyKey, never>
+        Returns: string
       }
       get_cinema_sync_data: {
         Args: { p_room_id: string; p_client_timestamp?: string }
@@ -979,6 +1030,10 @@ export type Database = {
           p_client_timestamp?: string
         }
         Returns: Json
+      }
+      send_admin_message: {
+        Args: { receiver_user_id: string; message_content: string }
+        Returns: string
       }
       update_cinema_sync_state: {
         Args: {
