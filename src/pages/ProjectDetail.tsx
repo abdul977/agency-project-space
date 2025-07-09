@@ -6,21 +6,31 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { 
-  ArrowLeft, 
-  Plus, 
-  Trash2, 
-  Save, 
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  ArrowLeft,
+  Plus,
+  Trash2,
+  Save,
   FolderPlus,
   Folder,
   FileText,
   Calendar,
   User,
-  Building2
+  Building2,
+  AlertTriangle
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { notifyAdminOfClientUpdate } from "@/lib/notifications";
+import SecurityManager from "@/lib/security";
 
 interface Project {
   id: string;
@@ -61,6 +71,8 @@ const ProjectDetail = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [newFolderName, setNewFolderName] = useState("");
   const [isCreatingFolder, setIsCreatingFolder] = useState(false);
+  const [deleteFolderId, setDeleteFolderId] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Fetch project and folders
   useEffect(() => {
@@ -326,6 +338,74 @@ const ProjectDetail = () => {
     }
   };
 
+  const deleteFolder = async (folderId: string) => {
+    if (!user || !projectId) return;
+
+    setIsDeleting(true);
+    try {
+      // Security check: Verify user has access to this folder
+      const canAccess = await SecurityManager.canAccessFolder(user.id, folderId);
+      if (!canAccess) {
+        toast({
+          title: "Access Denied",
+          description: "You don't have permission to delete this folder",
+          variant: "destructive",
+        });
+        return;
+      }
+      // First delete all folder inputs
+      const { error: inputsError } = await supabase
+        .from('folder_inputs')
+        .delete()
+        .eq('folder_id', folderId);
+
+      if (inputsError) {
+        console.error('Error deleting folder inputs:', inputsError);
+        throw new Error('Failed to delete folder inputs');
+      }
+
+      // Then delete the folder
+      const { error: folderError } = await supabase
+        .from('folders')
+        .delete()
+        .eq('id', folderId)
+        .eq('project_id', projectId); // Extra security check
+
+      if (folderError) {
+        console.error('Error deleting folder:', folderError);
+        throw new Error('Failed to delete folder');
+      }
+
+      // Update local state
+      setFolders(prev => prev.filter(f => f.id !== folderId));
+
+      toast({
+        title: "Folder deleted",
+        description: "Folder and all its content have been deleted successfully.",
+      });
+
+      // Notify admin of folder deletion
+      if (project && user) {
+        await notifyAdminOfClientUpdate(
+          user.full_name || 'Client',
+          project.name,
+          'folder_deleted'
+        );
+      }
+
+    } catch (error) {
+      console.error('Error deleting folder:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete folder. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeleting(false);
+      setDeleteFolderId(null);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -444,10 +524,20 @@ const ProjectDetail = () => {
               {folders.map((folder) => (
                 <Card key={folder.id} className="border-border-light">
                   <CardHeader className="pb-4 sm:pb-6">
-                    <CardTitle className="flex items-center space-x-2 text-wrap text-base sm:text-lg lg:text-xl">
-                      <Folder className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
-                      <span className="text-wrap break-words min-w-0">{folder.name}</span>
-                    </CardTitle>
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="flex items-center space-x-2 text-wrap text-base sm:text-lg lg:text-xl">
+                        <Folder className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
+                        <span className="text-wrap break-words min-w-0">{folder.name}</span>
+                      </CardTitle>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setDeleteFolderId(folder.id)}
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50 shrink-0"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                     <CardDescription className="text-wrap text-sm">
                       {folder.inputs.length} input field{folder.inputs.length !== 1 ? 's' : ''}
                     </CardDescription>
@@ -501,6 +591,47 @@ const ProjectDetail = () => {
           )}
         </div>
       </div>
+
+      {/* Delete Folder Confirmation Dialog */}
+      <Dialog open={!!deleteFolderId} onOpenChange={() => setDeleteFolderId(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-red-600" />
+              Delete Folder
+            </DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this folder? This action will permanently delete:
+              <ul className="list-disc list-inside mt-2 space-y-1">
+                <li>The folder and all its content</li>
+                <li>All input fields within this folder</li>
+              </ul>
+              <strong className="text-red-600 block mt-2">This action cannot be undone.</strong>
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setDeleteFolderId(null)}
+              disabled={isDeleting}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => deleteFolderId && deleteFolder(deleteFolderId)}
+              disabled={isDeleting}
+            >
+              {isDeleting ? (
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+              ) : (
+                <Trash2 className="h-4 w-4 mr-2" />
+              )}
+              Delete Folder
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

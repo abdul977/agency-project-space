@@ -14,12 +14,21 @@ export default {
 			center: true,
 			padding: '2rem',
 			screens: {
+				'xs': '475px',
 				'sm': '640px',
 				'md': '768px',
 				'lg': '1024px',
 				'xl': '1280px',
 				'2xl': '1400px'
 			}
+		},
+		screens: {
+			'xs': '475px',
+			'sm': '640px',
+			'md': '768px',
+			'lg': '1024px',
+			'xl': '1280px',
+			'2xl': '1400px'
 		},
 		fontFamily: {
 			sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
@@ -90,6 +99,12 @@ export default {
 				card: {
 					DEFAULT: 'hsl(var(--card))',
 					foreground: 'hsl(var(--card-foreground))'
+				},
+
+				// Popover colors
+				popover: {
+					DEFAULT: 'hsl(var(--popover))',
+					foreground: 'hsl(var(--popover-foreground))'
 				},
 				
 				// Sidebar colors (keeping existing)

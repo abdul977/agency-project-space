@@ -5,6 +5,16 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   FolderPlus,
   MessageSquare,
@@ -18,10 +28,15 @@ import {
   Folder,
   Plus,
   Search,
-  Package
+  Package,
+  Trash2,
+  AlertTriangle,
+  Filter,
+  X
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import SecurityManager from "@/lib/security";
 import CreateProjectModal from "@/components/CreateProjectModal";
 import NotificationDropdown from "@/components/NotificationDropdown";
 import MessageInterface from "@/components/MessageInterface";
@@ -42,9 +57,15 @@ const Dashboard = () => {
   const { user, logout } = useAuth();
   const { toast } = useToast();
   const [projects, setProjects] = useState<Project[]>([]);
+  const [filteredProjects, setFilteredProjects] = useState<Project[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('projects');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [deleteProjectId, setDeleteProjectId] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [sortBy, setSortBy] = useState<string>('updated_at');
 
   // Fetch user projects
   const fetchProjects = async () => {
@@ -88,6 +109,131 @@ const Dashboard = () => {
   useEffect(() => {
     fetchProjects();
   }, [user, toast]);
+
+  // Filter and sort projects
+  useEffect(() => {
+    let filtered = projects;
+
+    // Search filter
+    if (searchTerm) {
+      filtered = filtered.filter(project =>
+        project.name.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+
+    // Status filter
+    if (statusFilter !== 'all') {
+      filtered = filtered.filter(project => project.status === statusFilter);
+    }
+
+    // Sort projects
+    filtered = [...filtered].sort((a, b) => {
+      switch (sortBy) {
+        case 'name':
+          return a.name.localeCompare(b.name);
+        case 'created_at':
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        case 'updated_at':
+        default:
+          return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
+      }
+    });
+
+    setFilteredProjects(filtered);
+  }, [projects, searchTerm, statusFilter, sortBy]);
+
+  const clearFilters = () => {
+    setSearchTerm('');
+    setStatusFilter('all');
+    setSortBy('updated_at');
+  };
+
+  const deleteProject = async (projectId: string) => {
+    if (!user) return;
+
+    setIsDeleting(true);
+    try {
+      // Security check: Verify user has permission to delete this project
+      const canDelete = await SecurityManager.canDeleteProject(user.id, projectId);
+      if (!canDelete) {
+        toast({
+          title: "Access Denied",
+          description: "You don't have permission to delete this project",
+          variant: "destructive",
+        });
+        return;
+      }
+      // Start a transaction-like approach by deleting in order
+      // 1. Delete folder inputs first
+      const { error: inputsError } = await supabase
+        .from('folder_inputs')
+        .delete()
+        .in('folder_id',
+          supabase
+            .from('folders')
+            .select('id')
+            .eq('project_id', projectId)
+        );
+
+      if (inputsError) {
+        console.error('Error deleting folder inputs:', inputsError);
+        throw new Error('Failed to delete folder inputs');
+      }
+
+      // 2. Delete folders
+      const { error: foldersError } = await supabase
+        .from('folders')
+        .delete()
+        .eq('project_id', projectId);
+
+      if (foldersError) {
+        console.error('Error deleting folders:', foldersError);
+        throw new Error('Failed to delete folders');
+      }
+
+      // 3. Delete deliverables
+      const { error: deliverablesError } = await supabase
+        .from('deliverables')
+        .delete()
+        .eq('project_id', projectId);
+
+      if (deliverablesError) {
+        console.error('Error deleting deliverables:', deliverablesError);
+        throw new Error('Failed to delete deliverables');
+      }
+
+      // 4. Finally delete the project
+      const { error: projectError } = await supabase
+        .from('projects')
+        .delete()
+        .eq('id', projectId)
+        .eq('user_id', user.id); // Extra security check
+
+      if (projectError) {
+        console.error('Error deleting project:', projectError);
+        throw new Error('Failed to delete project');
+      }
+
+      // Update local state
+      setProjects(prev => prev.filter(p => p.id !== projectId));
+
+      toast({
+        title: "Project deleted",
+        description: "Project and all related data have been deleted successfully.",
+      });
+
+    } catch (error) {
+      console.error('Error deleting project:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete project. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeleting(false);
+      setDeleteProjectId(null);
+    }
+  };
 
   const handleLogout = async () => {
     try {
@@ -298,7 +444,79 @@ const Dashboard = () => {
                   </Button>
                 </div>
 
-                {projects.length === 0 ? (
+                {/* Filter Section */}
+                {projects.length > 0 && (
+                  <Card className="border-border-light">
+                    <CardContent className="p-4 sm:p-6">
+                      <div className="flex flex-col sm:flex-row gap-4">
+                        {/* Search */}
+                        <div className="flex-1 relative">
+                          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                          <Input
+                            placeholder="Search projects..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="pl-10"
+                          />
+                        </div>
+
+                        {/* Status Filter */}
+                        <Select value={statusFilter} onValueChange={setStatusFilter}>
+                          <SelectTrigger className="w-full sm:w-40">
+                            <SelectValue placeholder="Status" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">All Status</SelectItem>
+                            <SelectItem value="starting">Starting</SelectItem>
+                            <SelectItem value="in_progress">In Progress</SelectItem>
+                            <SelectItem value="completed">Completed</SelectItem>
+                          </SelectContent>
+                        </Select>
+
+                        {/* Sort By */}
+                        <Select value={sortBy} onValueChange={setSortBy}>
+                          <SelectTrigger className="w-full sm:w-40">
+                            <SelectValue placeholder="Sort by" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="updated_at">Last Updated</SelectItem>
+                            <SelectItem value="created_at">Date Created</SelectItem>
+                            <SelectItem value="name">Name</SelectItem>
+                          </SelectContent>
+                        </Select>
+
+                        {/* Clear Filters */}
+                        {(searchTerm || statusFilter !== 'all' || sortBy !== 'updated_at') && (
+                          <Button
+                            variant="outline"
+                            onClick={clearFilters}
+                            className="w-full sm:w-auto"
+                          >
+                            <X className="h-4 w-4 mr-2" />
+                            Clear
+                          </Button>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {filteredProjects.length === 0 && projects.length > 0 ? (
+                  <Card className="border-border-light">
+                    <CardContent className="py-12 text-center">
+                      <Filter className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                      <h3 className="text-lg font-semibold text-foreground mb-2">
+                        No projects match your filters
+                      </h3>
+                      <p className="text-muted-foreground mb-6">
+                        Try adjusting your search or filter criteria
+                      </p>
+                      <Button variant="outline" onClick={clearFilters}>
+                        Clear Filters
+                      </Button>
+                    </CardContent>
+                  </Card>
+                ) : projects.length === 0 ? (
                   <Card className="border-border-light">
                     <CardContent className="py-12 text-center">
                       <FolderPlus className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
@@ -319,7 +537,7 @@ const Dashboard = () => {
                   </Card>
                 ) : (
                   <div className="grid gap-4">
-                    {projects.map((project) => (
+                    {filteredProjects.map((project) => (
                       <Card key={project.id} className="border-border-light hover:shadow-md transition-shadow">
                         <CardContent className="p-4 sm:p-6 text-container-safe">
                           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -345,11 +563,21 @@ const Dashboard = () => {
                               </div>
                             </div>
 
-                            <Button variant="outline" size="sm" className="w-full sm:w-auto" asChild>
-                              <Link to={`/project/${project.id}`}>
-                                Open Project
-                              </Link>
-                            </Button>
+                            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                              <Button variant="outline" size="sm" className="w-full sm:w-auto" asChild>
+                                <Link to={`/project/${project.id}`}>
+                                  Open Project
+                                </Link>
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="w-full sm:w-auto text-red-600 hover:text-red-700 hover:bg-red-50"
+                                onClick={() => setDeleteProjectId(project.id)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
                           </div>
                         </CardContent>
                       </Card>
@@ -394,6 +622,48 @@ const Dashboard = () => {
         onClose={() => setIsCreateModalOpen(false)}
         onProjectCreated={fetchProjects}
       />
+
+      {/* Delete Project Confirmation Dialog */}
+      <Dialog open={!!deleteProjectId} onOpenChange={() => setDeleteProjectId(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-red-600" />
+              Delete Project
+            </DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this project? This action will permanently delete:
+              <ul className="list-disc list-inside mt-2 space-y-1">
+                <li>The project and all its folders</li>
+                <li>All folder inputs and content</li>
+                <li>All deliverables associated with this project</li>
+              </ul>
+              <strong className="text-red-600 block mt-2">This action cannot be undone.</strong>
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setDeleteProjectId(null)}
+              disabled={isDeleting}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => deleteProjectId && deleteProject(deleteProjectId)}
+              disabled={isDeleting}
+            >
+              {isDeleting ? (
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+              ) : (
+                <Trash2 className="h-4 w-4 mr-2" />
+              )}
+              Delete Project
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

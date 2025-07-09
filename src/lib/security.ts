@@ -66,6 +66,132 @@ export class SecurityManager {
     }
   }
 
+  // Check if user can access a deliverable
+  static async canAccessDeliverable(userId: string, deliverableId: string): Promise<boolean> {
+    try {
+      const { data, error } = await supabase
+        .from('deliverables')
+        .select(`
+          id,
+          projects!inner(user_id)
+        `)
+        .eq('id', deliverableId)
+        .single();
+
+      if (error || !data) {
+        return false;
+      }
+
+      return data.projects.user_id === userId;
+    } catch (error) {
+      console.error('Error checking deliverable access:', error);
+      return false;
+    }
+  }
+
+  // Check if user can delete a deliverable (must be owner or admin)
+  static async canDeleteDeliverable(userId: string, deliverableId: string): Promise<boolean> {
+    try {
+      // Check if user is admin
+      const isAdminUser = await this.isAdmin(userId);
+      if (isAdminUser) return true;
+
+      // Check if user owns the deliverable
+      return await this.canAccessDeliverable(userId, deliverableId);
+    } catch (error) {
+      console.error('Error checking deliverable delete permission:', error);
+      return false;
+    }
+  }
+
+  // Check if user can delete a project (must be owner or admin)
+  static async canDeleteProject(userId: string, projectId: string): Promise<boolean> {
+    try {
+      // Check if user is admin
+      const isAdminUser = await this.isAdmin(userId);
+      if (isAdminUser) return true;
+
+      // Check if user owns the project
+      return await this.canAccessProject(userId, projectId);
+    } catch (error) {
+      console.error('Error checking project delete permission:', error);
+      return false;
+    }
+  }
+
+  // Rate limiting for downloads
+  private static downloadAttempts = new Map<string, { count: number; lastAttempt: number }>();
+  private static readonly DOWNLOAD_RATE_LIMIT = 10; // Max downloads per minute
+  private static readonly RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute in milliseconds
+
+  static checkDownloadRateLimit(userId: string): boolean {
+    const now = Date.now();
+    const userAttempts = this.downloadAttempts.get(userId);
+
+    if (!userAttempts) {
+      this.downloadAttempts.set(userId, { count: 1, lastAttempt: now });
+      return true;
+    }
+
+    // Reset count if window has passed
+    if (now - userAttempts.lastAttempt > this.RATE_LIMIT_WINDOW) {
+      this.downloadAttempts.set(userId, { count: 1, lastAttempt: now });
+      return true;
+    }
+
+    // Check if under rate limit
+    if (userAttempts.count < this.DOWNLOAD_RATE_LIMIT) {
+      userAttempts.count++;
+      userAttempts.lastAttempt = now;
+      return true;
+    }
+
+    return false;
+  }
+
+  // Validate file upload security
+  static validateFileUpload(file: File): { valid: boolean; error?: string } {
+    const maxSize = 50 * 1024 * 1024; // 50MB
+    const allowedTypes = [
+      'application/pdf',
+      'application/zip',
+      'application/x-zip-compressed',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'text/plain',
+      'image/jpeg',
+      'image/png',
+      'image/gif'
+    ];
+
+    if (file.size > maxSize) {
+      return { valid: false, error: 'File size exceeds 50MB limit' };
+    }
+
+    if (!allowedTypes.includes(file.type)) {
+      return { valid: false, error: 'File type not allowed' };
+    }
+
+    // Check for suspicious file names
+    const suspiciousPatterns = [
+      /\.exe$/i,
+      /\.bat$/i,
+      /\.cmd$/i,
+      /\.scr$/i,
+      /\.vbs$/i,
+      /\.js$/i,
+      /\.php$/i,
+      /\.asp$/i,
+      /\.jsp$/i
+    ];
+
+    if (suspiciousPatterns.some(pattern => pattern.test(file.name))) {
+      return { valid: false, error: 'File type not allowed for security reasons' };
+    }
+
+    return { valid: true };
+  }
+
   // Sanitize user input to prevent XSS
   static sanitizeInput(input: string): string {
     return input
@@ -73,6 +199,32 @@ export class SecurityManager {
       .replace(/javascript:/gi, '') // Remove javascript: protocol
       .replace(/on\w+=/gi, '') // Remove event handlers
       .trim();
+  }
+
+  // Validate URL input
+  static validateUrl(url: string): { valid: boolean; error?: string } {
+    try {
+      const urlObj = new URL(url);
+
+      // Only allow http and https protocols
+      if (!['http:', 'https:'].includes(urlObj.protocol)) {
+        return { valid: false, error: 'Only HTTP and HTTPS URLs are allowed' };
+      }
+
+      // Block localhost and private IP ranges for security
+      const hostname = urlObj.hostname.toLowerCase();
+      if (hostname === 'localhost' ||
+          hostname === '127.0.0.1' ||
+          hostname.startsWith('192.168.') ||
+          hostname.startsWith('10.') ||
+          hostname.startsWith('172.')) {
+        return { valid: false, error: 'Private network URLs are not allowed' };
+      }
+
+      return { valid: true };
+    } catch (error) {
+      return { valid: false, error: 'Invalid URL format' };
+    }
   }
 
   // Validate phone number format

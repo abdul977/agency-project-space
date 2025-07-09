@@ -59,7 +59,7 @@ const NotificationDropdown = () => {
         </Button>
       </DropdownMenuTrigger>
 
-      <DropdownMenuContent align="end" className="w-72 sm:w-80 lg:w-96 max-w-[90vw]">
+      <DropdownMenuContent align="end" className="w-72 sm:w-80 lg:w-96 max-w-[90vw] bg-background border border-border shadow-lg backdrop-blur-sm">
         <DropdownMenuLabel className="flex items-center justify-between px-3 sm:px-4 py-2 sm:py-3">
           <span className="text-sm sm:text-base font-medium">Notifications</span>
           {unreadCount > 0 && (

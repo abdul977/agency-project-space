@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -21,20 +22,25 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { 
-  Plus, 
-  Send, 
-  ExternalLink, 
-  FileText, 
+import {
+  Plus,
+  Send,
+  ExternalLink,
+  FileText,
   Calendar,
   User,
   Package,
   Trash2,
-  Edit
+  Edit,
+  Download,
+  Search,
+  Filter,
+  X
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { notifyClientOfDeliverable } from '@/lib/notifications';
+import SecurityManager from '@/lib/security';
 
 interface Deliverable {
   id: string;
@@ -64,9 +70,15 @@ const DeliverableManager: React.FC<DeliverableManagerProps> = ({
   projectName
 }) => {
   const [deliverables, setDeliverables] = useState<Deliverable[]>([]);
+  const [filteredDeliverables, setFilteredDeliverables] = useState<Deliverable[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isSending, setIsSending] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [typeFilter, setTypeFilter] = useState<string>('all');
+  const [selectedDeliverables, setSelectedDeliverables] = useState<Set<string>>(new Set());
+  const [isBulkOperating, setIsBulkOperating] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -106,6 +118,183 @@ const DeliverableManager: React.FC<DeliverableManagerProps> = ({
     fetchDeliverables();
   }, [projectId, toast]);
 
+  // Filter deliverables based on search and filters
+  useEffect(() => {
+    let filtered = deliverables;
+
+    // Search filter
+    if (searchTerm) {
+      filtered = filtered.filter(deliverable =>
+        deliverable.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (deliverable.description && deliverable.description.toLowerCase().includes(searchTerm.toLowerCase()))
+      );
+    }
+
+    // Status filter
+    if (statusFilter !== 'all') {
+      filtered = filtered.filter(deliverable => {
+        if (statusFilter === 'sent') return deliverable.is_sent;
+        if (statusFilter === 'draft') return !deliverable.is_sent;
+        return true;
+      });
+    }
+
+    // Type filter
+    if (typeFilter !== 'all') {
+      filtered = filtered.filter(deliverable => deliverable.deliverable_type === typeFilter);
+    }
+
+    setFilteredDeliverables(filtered);
+  }, [deliverables, searchTerm, statusFilter, typeFilter]);
+
+  const clearFilters = () => {
+    setSearchTerm('');
+    setStatusFilter('all');
+    setTypeFilter('all');
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedDeliverables.size === filteredDeliverables.length) {
+      setSelectedDeliverables(new Set());
+    } else {
+      setSelectedDeliverables(new Set(filteredDeliverables.map(d => d.id)));
+    }
+  };
+
+  const toggleSelectDeliverable = (id: string) => {
+    const newSelected = new Set(selectedDeliverables);
+    if (newSelected.has(id)) {
+      newSelected.delete(id);
+    } else {
+      newSelected.add(id);
+    }
+    setSelectedDeliverables(newSelected);
+  };
+
+  const bulkSendDeliverables = async () => {
+    if (selectedDeliverables.size === 0) return;
+
+    setIsBulkOperating(true);
+    try {
+      const selectedIds = Array.from(selectedDeliverables);
+      const { error } = await supabase
+        .from('deliverables')
+        .update({
+          is_sent: true,
+          sent_at: new Date().toISOString()
+        })
+        .in('id', selectedIds)
+        .eq('is_sent', false); // Only update unsent deliverables
+
+      if (error) {
+        console.error('Error bulk sending deliverables:', error);
+        toast({
+          title: "Error",
+          description: "Failed to send some deliverables",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Update local state
+      setDeliverables(prev => prev.map(d =>
+        selectedIds.includes(d.id) && !d.is_sent
+          ? { ...d, is_sent: true, sent_at: new Date().toISOString() }
+          : d
+      ));
+
+      setSelectedDeliverables(new Set());
+      toast({
+        title: "Deliverables sent",
+        description: `${selectedIds.length} deliverables have been sent to the client.`,
+      });
+
+    } catch (error) {
+      console.error('Error bulk sending deliverables:', error);
+      toast({
+        title: "Error",
+        description: "Failed to send deliverables",
+        variant: "destructive",
+      });
+    } finally {
+      setIsBulkOperating(false);
+    }
+  };
+
+  const bulkDeleteDeliverables = async () => {
+    if (selectedDeliverables.size === 0) return;
+
+    setIsBulkOperating(true);
+    try {
+      const selectedIds = Array.from(selectedDeliverables);
+      const { error } = await supabase
+        .from('deliverables')
+        .delete()
+        .in('id', selectedIds);
+
+      if (error) {
+        console.error('Error bulk deleting deliverables:', error);
+        toast({
+          title: "Error",
+          description: "Failed to delete some deliverables",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Update local state
+      setDeliverables(prev => prev.filter(d => !selectedIds.includes(d.id)));
+      setSelectedDeliverables(new Set());
+
+      toast({
+        title: "Deliverables deleted",
+        description: `${selectedIds.length} deliverables have been deleted.`,
+      });
+
+    } catch (error) {
+      console.error('Error bulk deleting deliverables:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete deliverables",
+        variant: "destructive",
+      });
+    } finally {
+      setIsBulkOperating(false);
+    }
+  };
+
+  const bulkDownloadDeliverables = async () => {
+    if (selectedDeliverables.size === 0) return;
+
+    setIsBulkOperating(true);
+    try {
+      const selectedDeliverableObjects = filteredDeliverables.filter(d =>
+        selectedDeliverables.has(d.id)
+      );
+
+      for (const deliverable of selectedDeliverableObjects) {
+        await downloadDeliverable(deliverable);
+        // Add small delay between downloads
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+
+      toast({
+        title: "Downloads started",
+        description: `Started downloading ${selectedDeliverableObjects.length} deliverables.`,
+      });
+
+    } catch (error) {
+      console.error('Error bulk downloading deliverables:', error);
+      toast({
+        title: "Error",
+        description: "Failed to download some deliverables",
+        variant: "destructive",
+      });
+    } finally {
+      setIsBulkOperating(false);
+    }
+  };
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
@@ -136,6 +325,19 @@ const DeliverableManager: React.FC<DeliverableManagerProps> = ({
         return;
       }
 
+      // Validate URL if provided
+      if (formData.type === 'url' && formData.url.trim()) {
+        const urlValidation = SecurityManager.validateUrl(formData.url.trim());
+        if (!urlValidation.valid) {
+          toast({
+            title: "Invalid URL",
+            description: urlValidation.error,
+            variant: "destructive",
+          });
+          return;
+        }
+      }
+
       if (formData.type === 'file' && !formData.file) {
         toast({
           title: "Error",
@@ -145,11 +347,61 @@ const DeliverableManager: React.FC<DeliverableManagerProps> = ({
         return;
       }
 
-      let filePath = null;
+      // Validate file if provided
       if (formData.type === 'file' && formData.file) {
-        // In a real implementation, upload the file to Supabase Storage
-        // For demo purposes, we'll just use the filename
-        filePath = `deliverables/${Date.now()}-${formData.file.name}`;
+        const fileValidation = SecurityManager.validateFileUpload(formData.file);
+        if (!fileValidation.valid) {
+          toast({
+            title: "Invalid File",
+            description: fileValidation.error,
+            variant: "destructive",
+          });
+          return;
+        }
+      }
+
+      let filePath = null;
+      let fileUrl = null;
+      if (formData.type === 'file' && formData.file) {
+        try {
+          // Generate unique filename
+          const fileExt = formData.file.name.split('.').pop();
+          const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+          filePath = `deliverables/${projectId}/${fileName}`;
+
+          // Upload file to Supabase Storage
+          const { data: uploadData, error: uploadError } = await supabase.storage
+            .from('deliverables')
+            .upload(filePath, formData.file, {
+              cacheControl: '3600',
+              upsert: false
+            });
+
+          if (uploadError) {
+            console.error('Error uploading file:', uploadError);
+            toast({
+              title: "Upload Error",
+              description: "Failed to upload file. Please try again.",
+              variant: "destructive",
+            });
+            return;
+          }
+
+          // Get public URL for the uploaded file
+          const { data: urlData } = supabase.storage
+            .from('deliverables')
+            .getPublicUrl(filePath);
+
+          fileUrl = urlData.publicUrl;
+        } catch (error) {
+          console.error('Error during file upload:', error);
+          toast({
+            title: "Upload Error",
+            description: "Failed to upload file. Please try again.",
+            variant: "destructive",
+          });
+          return;
+        }
       }
 
       const { data: deliverable, error } = await supabase
@@ -159,7 +411,7 @@ const DeliverableManager: React.FC<DeliverableManagerProps> = ({
           title: formData.title.trim(),
           description: formData.description.trim(),
           deliverable_type: formData.type,
-          deliverable_url: formData.type === 'url' ? formData.url.trim() : null,
+          deliverable_url: formData.type === 'url' ? formData.url.trim() : fileUrl,
           file_path: filePath,
           is_sent: false
         })
@@ -257,8 +509,76 @@ const DeliverableManager: React.FC<DeliverableManagerProps> = ({
     }
   };
 
+  const downloadDeliverable = async (deliverable: Deliverable) => {
+    // Check rate limiting
+    if (!SecurityManager.checkDownloadRateLimit(clientId)) {
+      toast({
+        title: "Rate Limit Exceeded",
+        description: "Too many download attempts. Please wait a moment before trying again.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (deliverable.deliverable_type === 'url' && deliverable.deliverable_url) {
+      window.open(deliverable.deliverable_url, '_blank');
+      return;
+    }
+
+    if (deliverable.deliverable_type === 'file' && deliverable.file_path) {
+      try {
+        // Generate signed URL for secure download
+        const { data: signedUrlData, error: signedUrlError } = await supabase.storage
+          .from('deliverables')
+          .createSignedUrl(deliverable.file_path, 3600); // 1 hour expiry
+
+        if (signedUrlError) {
+          console.error('Error creating signed URL:', signedUrlError);
+          toast({
+            title: "Download Error",
+            description: "Failed to generate download link",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        // Create download link and trigger download
+        const link = document.createElement('a');
+        link.href = signedUrlData.signedUrl;
+        link.download = deliverable.title || 'download';
+        link.target = '_blank';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        toast({
+          title: "Download Started",
+          description: `Downloading ${deliverable.title}`,
+        });
+      } catch (error) {
+        console.error('Error downloading file:', error);
+        toast({
+          title: "Download Error",
+          description: "Failed to download file",
+          variant: "destructive",
+        });
+      }
+    }
+  };
+
   const deleteDeliverable = async (deliverableId: string) => {
     try {
+      // Security check: Verify user has permission to delete this deliverable
+      const canDelete = await SecurityManager.canDeleteDeliverable(clientId, deliverableId);
+      if (!canDelete) {
+        toast({
+          title: "Access Denied",
+          description: "You don't have permission to delete this deliverable",
+          variant: "destructive",
+        });
+        return;
+      }
+
       const { error } = await supabase
         .from('deliverables')
         .delete()
@@ -416,8 +736,146 @@ const DeliverableManager: React.FC<DeliverableManagerProps> = ({
         </Dialog>
       </div>
 
+      {/* Filter Section */}
+      {deliverables.length > 0 && (
+        <Card className="border-border-light">
+          <CardContent className="p-6">
+            <div className="flex flex-col sm:flex-row gap-4">
+              {/* Search */}
+              <div className="flex-1 relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search deliverables..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+
+              {/* Status Filter */}
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-full sm:w-40">
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Status</SelectItem>
+                  <SelectItem value="sent">Sent</SelectItem>
+                  <SelectItem value="draft">Draft</SelectItem>
+                </SelectContent>
+              </Select>
+
+              {/* Type Filter */}
+              <Select value={typeFilter} onValueChange={setTypeFilter}>
+                <SelectTrigger className="w-full sm:w-40">
+                  <SelectValue placeholder="Type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Types</SelectItem>
+                  <SelectItem value="url">URLs</SelectItem>
+                  <SelectItem value="file">Files</SelectItem>
+                </SelectContent>
+              </Select>
+
+              {/* Clear Filters */}
+              {(searchTerm || statusFilter !== 'all' || typeFilter !== 'all') && (
+                <Button
+                  variant="outline"
+                  onClick={clearFilters}
+                  className="w-full sm:w-auto"
+                >
+                  <X className="h-4 w-4 mr-2" />
+                  Clear
+                </Button>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Bulk Actions Toolbar */}
+      {filteredDeliverables.length > 0 && (
+        <Card className="border-border-light">
+          <CardContent className="p-4">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-4">
+                <Checkbox
+                  checked={selectedDeliverables.size === filteredDeliverables.length && filteredDeliverables.length > 0}
+                  onCheckedChange={toggleSelectAll}
+                />
+                <span className="text-sm text-muted-foreground">
+                  {selectedDeliverables.size > 0
+                    ? `${selectedDeliverables.size} selected`
+                    : 'Select all'
+                  }
+                </span>
+              </div>
+
+              {selectedDeliverables.size > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={bulkSendDeliverables}
+                    disabled={isBulkOperating}
+                  >
+                    {isBulkOperating ? (
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current mr-2"></div>
+                    ) : (
+                      <Send className="h-4 w-4 mr-2" />
+                    )}
+                    Send Selected
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={bulkDownloadDeliverables}
+                    disabled={isBulkOperating}
+                  >
+                    {isBulkOperating ? (
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current mr-2"></div>
+                    ) : (
+                      <Download className="h-4 w-4 mr-2" />
+                    )}
+                    Download Selected
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={bulkDeleteDeliverables}
+                    disabled={isBulkOperating}
+                    className="text-red-600 hover:text-red-700"
+                  >
+                    {isBulkOperating ? (
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current mr-2"></div>
+                    ) : (
+                      <Trash2 className="h-4 w-4 mr-2" />
+                    )}
+                    Delete Selected
+                  </Button>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Deliverables List */}
-      {deliverables.length === 0 ? (
+      {filteredDeliverables.length === 0 && deliverables.length > 0 ? (
+        <Card>
+          <CardContent className="py-12 text-center">
+            <Filter className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+            <h3 className="text-lg font-semibold text-foreground mb-2">
+              No deliverables match your filters
+            </h3>
+            <p className="text-muted-foreground mb-4">
+              Try adjusting your search or filter criteria
+            </p>
+            <Button variant="outline" onClick={clearFilters}>
+              Clear Filters
+            </Button>
+          </CardContent>
+        </Card>
+      ) : deliverables.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center">
             <Package className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
@@ -431,10 +889,15 @@ const DeliverableManager: React.FC<DeliverableManagerProps> = ({
         </Card>
       ) : (
         <div className="space-y-4">
-          {deliverables.map((deliverable) => (
+          {filteredDeliverables.map((deliverable) => (
             <Card key={deliverable.id} className="border-border-light">
               <CardContent className="p-6">
-                <div className="flex items-start justify-between">
+                <div className="flex items-start gap-4">
+                  <Checkbox
+                    checked={selectedDeliverables.has(deliverable.id)}
+                    onCheckedChange={() => toggleSelectDeliverable(deliverable.id)}
+                    className="mt-1"
+                  />
                   <div className="flex-1">
                     <div className="flex items-center space-x-3 mb-2">
                       <h4 className="font-semibold text-foreground">
@@ -500,7 +963,20 @@ const DeliverableManager: React.FC<DeliverableManagerProps> = ({
                         )}
                       </Button>
                     )}
-                    
+
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => downloadDeliverable(deliverable)}
+                      className="text-blue-600 hover:text-blue-700"
+                    >
+                      {deliverable.deliverable_type === 'url' ? (
+                        <ExternalLink className="h-4 w-4" />
+                      ) : (
+                        <Download className="h-4 w-4" />
+                      )}
+                    </Button>
+
                     <Button
                       variant="outline"
                       size="sm"

@@ -6,11 +6,19 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Textarea } from "@/components/ui/textarea";
-import { 
-  ArrowLeft, 
-  User, 
-  Building2, 
-  Phone, 
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  ArrowLeft,
+  User,
+  Building2,
+  Phone,
   Calendar,
   Folder,
   FileText,
@@ -21,10 +29,13 @@ import {
   Send,
   Clock,
   CheckCircle,
-  AlertCircle
+  AlertCircle,
+  Trash2,
+  AlertTriangle
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import SecurityManager from "@/lib/security";
 import DeliverableManager from "@/components/DeliverableManager";
 import MessageInterface from "@/components/MessageInterface";
 
@@ -73,6 +84,8 @@ const AdminClientDetail = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('projects');
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+  const [deleteProjectId, setDeleteProjectId] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Auto-select first project when switching to deliverables tab
   useEffect(() => {
@@ -242,6 +255,110 @@ const AdminClientDetail = () => {
       }
     } catch (error) {
       console.error('Error updating project status:', error);
+    }
+  };
+
+  const deleteProject = async (projectId: string) => {
+    if (!user || !clientId) return;
+
+    setIsDeleting(true);
+    try {
+      // Security check: Verify user is admin
+      const isAdminUser = await SecurityManager.isAdmin(user.id);
+      if (!isAdminUser) {
+        toast({
+          title: "Access Denied",
+          description: "Only administrators can delete projects",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Admin-level deletion with additional safety checks
+      // 1. Verify the project belongs to the specified client
+      const { data: projectCheck, error: checkError } = await supabase
+        .from('projects')
+        .select('user_id')
+        .eq('id', projectId)
+        .single();
+
+      if (checkError || !projectCheck || projectCheck.user_id !== clientId) {
+        throw new Error('Project not found or access denied');
+      }
+
+      // 2. Delete folder inputs first
+      const { error: inputsError } = await supabase
+        .from('folder_inputs')
+        .delete()
+        .in('folder_id',
+          supabase
+            .from('folders')
+            .select('id')
+            .eq('project_id', projectId)
+        );
+
+      if (inputsError) {
+        console.error('Error deleting folder inputs:', inputsError);
+        throw new Error('Failed to delete folder inputs');
+      }
+
+      // 3. Delete folders
+      const { error: foldersError } = await supabase
+        .from('folders')
+        .delete()
+        .eq('project_id', projectId);
+
+      if (foldersError) {
+        console.error('Error deleting folders:', foldersError);
+        throw new Error('Failed to delete folders');
+      }
+
+      // 4. Delete deliverables
+      const { error: deliverablesError } = await supabase
+        .from('deliverables')
+        .delete()
+        .eq('project_id', projectId);
+
+      if (deliverablesError) {
+        console.error('Error deleting deliverables:', deliverablesError);
+        throw new Error('Failed to delete deliverables');
+      }
+
+      // 5. Finally delete the project
+      const { error: projectError } = await supabase
+        .from('projects')
+        .delete()
+        .eq('id', projectId)
+        .eq('user_id', clientId); // Extra security check
+
+      if (projectError) {
+        console.error('Error deleting project:', projectError);
+        throw new Error('Failed to delete project');
+      }
+
+      // Update local state
+      setProjects(prev => prev.filter(p => p.id !== projectId));
+
+      // Clear selected project if it was deleted
+      if (selectedProjectId === projectId) {
+        setSelectedProjectId(null);
+      }
+
+      toast({
+        title: "Project deleted",
+        description: "Project and all related data have been deleted successfully.",
+      });
+
+    } catch (error) {
+      console.error('Error deleting project:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete project. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeleting(false);
+      setDeleteProjectId(null);
     }
   };
 
@@ -569,19 +686,29 @@ const AdminClientDetail = () => {
                                 <option value="in_progress">In Progress</option>
                                 <option value="completed">Completed</option>
                               </select>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => {
-                                  setSelectedProjectId(project.id);
-                                  setActiveTab('deliverables');
-                                }}
-                                className="w-full sm:w-auto"
-                              >
-                                <Send className="h-4 w-4 mr-2" />
-                                <span className="hidden xs:inline">Deliverables</span>
-                                <span className="xs:hidden">Files</span>
-                              </Button>
+                              <div className="flex gap-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    setSelectedProjectId(project.id);
+                                    setActiveTab('deliverables');
+                                  }}
+                                  className="flex-1"
+                                >
+                                  <Send className="h-4 w-4 mr-2" />
+                                  <span className="hidden xs:inline">Deliverables</span>
+                                  <span className="xs:hidden">Files</span>
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => setDeleteProjectId(project.id)}
+                                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
                             </div>
                           </div>
 
@@ -618,6 +745,14 @@ const AdminClientDetail = () => {
                                 >
                                   <Send className="h-4 w-4 mr-2" />
                                   Deliverables
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => setDeleteProjectId(project.id)}
+                                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                >
+                                  <Trash2 className="h-4 w-4" />
                                 </Button>
                               </div>
                             </div>
@@ -840,6 +975,48 @@ const AdminClientDetail = () => {
           </div>
         </div>
       </div>
+
+      {/* Delete Project Confirmation Dialog */}
+      <Dialog open={!!deleteProjectId} onOpenChange={() => setDeleteProjectId(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-red-600" />
+              Delete Project
+            </DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this project? This action will permanently delete:
+              <ul className="list-disc list-inside mt-2 space-y-1">
+                <li>The project and all its folders</li>
+                <li>All folder inputs and content</li>
+                <li>All deliverables associated with this project</li>
+              </ul>
+              <strong className="text-red-600 block mt-2">This action cannot be undone.</strong>
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setDeleteProjectId(null)}
+              disabled={isDeleting}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => deleteProjectId && deleteProject(deleteProjectId)}
+              disabled={isDeleting}
+            >
+              {isDeleting ? (
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+              ) : (
+                <Trash2 className="h-4 w-4 mr-2" />
+              )}
+              Delete Project
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
