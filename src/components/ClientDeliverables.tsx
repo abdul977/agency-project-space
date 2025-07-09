@@ -20,14 +20,13 @@ interface Deliverable {
   project_id: string;
   title: string;
   description?: string;
-  deliverable_type?: 'url' | 'file';
+  deliverable_type?: 'url' | 'file' | string;
   deliverable_url?: string;
   file_path?: string;
   is_sent?: boolean;
   created_at: string;
   sent_at?: string;
-  // Legacy fields that might still exist - type can be any string from database
-  type?: string;
+  type?: 'url' | 'file' | string;
   content?: string;
   delivered_at?: string;
   projects?: {

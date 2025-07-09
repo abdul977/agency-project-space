@@ -32,7 +32,7 @@ import ProfileEditor from "@/components/ProfileEditor";
 interface Project {
   id: string;
   name: string;
-  status: 'starting' | 'in_progress' | 'completed';
+  status: 'starting' | 'in_progress' | 'completed' | string;
   created_at: string;
   updated_at: string;
   folder_count?: number;
@@ -68,8 +68,12 @@ const Dashboard = () => {
           variant: "destructive",
         });
       } else {
-        const projectsWithFolderCount = data?.map(project => ({
-          ...project,
+        const projectsWithFolderCount = data?.map((project: any) => ({
+          id: project.id,
+          name: project.name,
+          status: project.status || 'starting',
+          created_at: project.created_at,
+          updated_at: project.updated_at,
           folder_count: project.folders?.length || 0
         })) || [];
         setProjects(projectsWithFolderCount);

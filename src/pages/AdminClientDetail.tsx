@@ -40,7 +40,7 @@ interface ClientData {
 interface Project {
   id: string;
   name: string;
-  status: 'starting' | 'in_progress' | 'completed';
+  status: 'starting' | 'in_progress' | 'completed' | string;
   created_at: string;
   updated_at: string;
   folders: Folder[];

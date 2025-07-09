@@ -138,9 +138,9 @@ const FileUpload: React.FC<FileUploadProps> = ({
           project_id: projectId,
           filename: file.name,
           file_size: file.size,
-          file_type: file.type,
+          mime_type: file.type,
           file_path: filePath,
-          uploaded_by: 'current_user' // This should be the actual user ID
+          user_id: 'current_user' // This should be the actual user ID
         })
         .select()
         .single();

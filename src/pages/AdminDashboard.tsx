@@ -39,6 +39,12 @@ interface ClientData {
   project_count: number;
   latest_activity: string;
   has_new_content: boolean;
+  projects?: Array<{
+    id: string;
+    name: string;
+    status: string;
+    updated_at: string;
+  }>;
 }
 
 interface DashboardStats {
@@ -79,6 +85,7 @@ const AdminDashboard = () => {
             updated_at,
             projects (
               id,
+              name,
               status,
               updated_at
             )
@@ -94,14 +101,20 @@ const AdminDashboard = () => {
             variant: "destructive",
           });
         } else {
-          const processedClients = clientsData?.map(client => ({
-            ...client,
+          const processedClients = clientsData?.map((client: any) => ({
+            id: client.id,
+            phone_number: client.phone_number,
+            full_name: client.full_name,
+            company_name: client.company_name,
+            created_at: client.created_at,
+            updated_at: client.updated_at,
+            projects: client.projects || [],
             project_count: client.projects?.length || 0,
             latest_activity: client.projects?.length > 0 
-              ? Math.max(...client.projects.map(p => new Date(p.updated_at).getTime()))
-              : new Date(client.created_at).getTime(),
-            has_new_content: client.projects?.some(p => 
-              new Date(p.updated_at).getTime() > Date.now() - 24 * 60 * 60 * 1000
+              ? new Date(Math.max(...client.projects.map((p: any) => new Date(p.updated_at || p.created_at).getTime()))).toISOString()
+              : client.updated_at || client.created_at,
+            has_new_content: client.projects?.some((p: any) => 
+              new Date(p.updated_at || p.created_at).getTime() > Date.now() - 24 * 60 * 60 * 1000
             ) || false
           })) || [];
           
@@ -110,10 +123,10 @@ const AdminDashboard = () => {
           // Calculate stats
           const totalClients = processedClients.length;
           const activeProjects = processedClients.reduce((sum, client) => 
-            sum + (client.projects?.filter(p => p.status === 'in_progress').length || 0), 0
+            sum + (client.projects?.filter((p: any) => p.status === 'in_progress').length || 0), 0
           );
           const completedProjects = processedClients.reduce((sum, client) => 
-            sum + (client.projects?.filter(p => p.status === 'completed').length || 0), 0
+            sum + (client.projects?.filter((p: any) => p.status === 'completed').length || 0), 0
           );
 
           setStats({
@@ -226,9 +239,9 @@ const AdminDashboard = () => {
         </div>
       </header>
 
-      <div className="container mx-auto px-4 py-4 sm:py-6 lg:py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8">
-          {/* Sidebar - Mobile: Horizontal scroll, Desktop: Vertical */}
+      <div className="container mx-auto px-4 py-8 max-w-full overflow-x-hidden">
+        <div className="grid lg:grid-cols-4 gap-4 lg:gap-8">
+          {/* Sidebar */}
           <div className="lg:col-span-1">
             {/* Mobile Navigation - Horizontal Scroll */}
             <div className="lg:hidden mb-4 sm:mb-6">
@@ -336,7 +349,7 @@ const AdminDashboard = () => {
           </div>
 
           {/* Main Content */}
-          <div className="lg:col-span-3">
+          <div className="lg:col-span-3 min-w-0 overflow-x-hidden">
             {activeTab === 'overview' && (
               <div className="space-y-4 sm:space-y-6">
                 <div className="text-center sm:text-left">
@@ -347,13 +360,13 @@ const AdminDashboard = () => {
                 </div>
 
                 {/* Stats Cards */}
-                <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                   <Card className="border-border-light">
-                    <CardContent className="p-3 sm:p-4 lg:p-6">
-                      <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-3">
-                        <Users className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600 mx-auto sm:mx-0" />
-                        <div className="text-center sm:text-left">
-                          <p className="text-lg sm:text-xl lg:text-2xl font-bold text-foreground">{stats.total_clients}</p>
+                    <CardContent className="p-4 sm:p-6">
+                      <div className="flex items-center space-x-2">
+                        <Users className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600 flex-shrink-0" />
+                        <div className="min-w-0">
+                          <p className="text-xl sm:text-2xl font-bold text-foreground">{stats.total_clients}</p>
                           <p className="text-xs sm:text-sm text-muted-foreground">Total Clients</p>
                         </div>
                       </div>
@@ -361,11 +374,11 @@ const AdminDashboard = () => {
                   </Card>
 
                   <Card className="border-border-light">
-                    <CardContent className="p-3 sm:p-4 lg:p-6">
-                      <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-3">
-                        <Clock className="h-6 w-6 sm:h-8 sm:w-8 text-yellow-600 mx-auto sm:mx-0" />
-                        <div className="text-center sm:text-left">
-                          <p className="text-lg sm:text-xl lg:text-2xl font-bold text-foreground">{stats.active_projects}</p>
+                    <CardContent className="p-4 sm:p-6">
+                      <div className="flex items-center space-x-2">
+                        <Clock className="h-6 w-6 sm:h-8 sm:w-8 text-yellow-600 flex-shrink-0" />
+                        <div className="min-w-0">
+                          <p className="text-xl sm:text-2xl font-bold text-foreground">{stats.active_projects}</p>
                           <p className="text-xs sm:text-sm text-muted-foreground">Active Projects</p>
                         </div>
                       </div>
@@ -373,11 +386,11 @@ const AdminDashboard = () => {
                   </Card>
 
                   <Card className="border-border-light">
-                    <CardContent className="p-3 sm:p-4 lg:p-6">
-                      <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-3">
-                        <CheckCircle className="h-6 w-6 sm:h-8 sm:w-8 text-green-600 mx-auto sm:mx-0" />
-                        <div className="text-center sm:text-left">
-                          <p className="text-lg sm:text-xl lg:text-2xl font-bold text-foreground">{stats.completed_projects}</p>
+                    <CardContent className="p-4 sm:p-6">
+                      <div className="flex items-center space-x-2">
+                        <CheckCircle className="h-6 w-6 sm:h-8 sm:w-8 text-green-600 flex-shrink-0" />
+                        <div className="min-w-0">
+                          <p className="text-xl sm:text-2xl font-bold text-foreground">{stats.completed_projects}</p>
                           <p className="text-xs sm:text-sm text-muted-foreground">Completed</p>
                         </div>
                       </div>
@@ -385,11 +398,11 @@ const AdminDashboard = () => {
                   </Card>
 
                   <Card className="border-border-light">
-                    <CardContent className="p-3 sm:p-4 lg:p-6">
-                      <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-3">
-                        <MessageSquare className="h-6 w-6 sm:h-8 sm:w-8 text-purple-600 mx-auto sm:mx-0" />
-                        <div className="text-center sm:text-left">
-                          <p className="text-lg sm:text-xl lg:text-2xl font-bold text-foreground">{stats.new_messages}</p>
+                    <CardContent className="p-4 sm:p-6">
+                      <div className="flex items-center space-x-2">
+                        <MessageSquare className="h-6 w-6 sm:h-8 sm:w-8 text-purple-600 flex-shrink-0" />
+                        <div className="min-w-0">
+                          <p className="text-xl sm:text-2xl font-bold text-foreground">{stats.new_messages}</p>
                           <p className="text-xs sm:text-sm text-muted-foreground">New Messages</p>
                         </div>
                       </div>
@@ -408,71 +421,34 @@ const AdminDashboard = () => {
                   <CardContent className="px-4 sm:px-6">
                     <div className="space-y-3 sm:space-y-4">
                       {clients.slice(0, 5).map((client) => (
-                        <div key={client.id} className="flex items-start sm:items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-lg bg-muted/30">
-                          {/* Avatar */}
-                          <Avatar className="h-8 w-8 sm:h-10 sm:w-10 shrink-0 mt-0.5 sm:mt-0">
-                            <AvatarFallback className="bg-primary text-primary-foreground text-xs sm:text-sm">
-                              {client.full_name ? getInitials(client.full_name) : 'U'}
-                            </AvatarFallback>
-                          </Avatar>
-
-                          {/* Client Info - Mobile Layout */}
-                          <div className="flex-1 min-w-0 sm:hidden">
-                            <div className="flex items-start justify-between gap-2">
-                              <div className="min-w-0 flex-1">
-                                <p className="font-medium text-foreground text-sm truncate">
-                                  {client.full_name || 'Unknown User'}
-                                </p>
-                                <p className="text-xs text-muted-foreground truncate">
-                                  {client.company_name} • {client.project_count} projects
-                                </p>
-                              </div>
-                              <div className="flex items-center gap-2 shrink-0">
-                                {client.has_new_content && (
-                                  <Badge variant="secondary" className="bg-green-100 text-green-800 text-xs px-1.5 py-0.5">
-                                    NEW
-                                  </Badge>
-                                )}
-                                <Button variant="outline" size="sm" asChild className="h-7 w-7 p-0">
-                                  <Link to={`/admin/client/${client.id}`}>
-                                    <Eye className="h-3.5 w-3.5" />
-                                    <span className="sr-only">View {client.full_name}</span>
-                                  </Link>
-                                </Button>
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Client Info - Desktop Layout */}
-                          <div className="hidden sm:flex sm:flex-1 sm:items-center sm:gap-4">
+                        <div key={client.id} className="flex flex-col sm:flex-row sm:items-center space-y-3 sm:space-y-0 sm:space-x-4 p-3 rounded-lg bg-muted/30">
+                          <div className="flex items-center space-x-3 min-w-0 flex-1">
+                            <Avatar className="h-10 w-10 flex-shrink-0">
+                              <AvatarFallback className="bg-primary text-primary-foreground">
+                                {client.full_name ? getInitials(client.full_name) : 'U'}
+                              </AvatarFallback>
+                            </Avatar>
                             <div className="flex-1 min-w-0">
-                              <p className="font-medium text-foreground truncate">
+                              <p className="font-medium text-foreground text-wrap">
                                 {client.full_name || 'Unknown User'}
                               </p>
-                              <p className="text-sm text-muted-foreground truncate">
+                              <p className="text-sm text-muted-foreground text-wrap">
                                 {client.company_name} • {client.project_count} projects
                               </p>
                             </div>
-
-                            <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-                              {client.has_new_content && (
-                                <Badge variant="secondary" className="bg-green-100 text-green-800 hidden md:inline-flex">
-                                  NEW
-                                </Badge>
-                              )}
-                              <Button variant="outline" size="sm" asChild className="hidden lg:inline-flex">
-                                <Link to={`/admin/client/${client.id}`}>
-                                  <Eye className="h-4 w-4 mr-2" />
-                                  View
-                                </Link>
-                              </Button>
-                              <Button variant="outline" size="sm" asChild className="lg:hidden h-8 w-8 p-0">
-                                <Link to={`/admin/client/${client.id}`}>
-                                  <Eye className="h-4 w-4" />
-                                  <span className="sr-only">View {client.full_name}</span>
-                                </Link>
-                              </Button>
-                            </div>
+                          </div>
+                          <div className="flex items-center justify-between sm:justify-end space-x-2 w-full sm:w-auto">
+                            {client.has_new_content && (
+                              <Badge variant="secondary" className="bg-green-100 text-green-800">
+                                NEW
+                              </Badge>
+                            )}
+                            <Button variant="outline" size="sm" asChild className="flex-shrink-0">
+                              <Link to={`/admin/client/${client.id}`}>
+                                <Eye className="h-4 w-4 mr-2" />
+                                <span className="hidden sm:inline">View</span>
+                              </Link>
+                            </Button>
                           </div>
                         </div>
                       ))}
@@ -522,44 +498,44 @@ const AdminDashboard = () => {
                   <CardContent>
                     <div className="space-y-4">
                       {filteredClients.map((client) => (
-                        <div key={client.id} className="flex items-center justify-between p-4 border border-border-light rounded-lg">
-                          <div className="flex items-center space-x-4">
-                            <Avatar className="h-12 w-12">
+                        <div key={client.id} className="flex flex-col lg:flex-row lg:items-center justify-between p-4 border border-border-light rounded-lg gap-4">
+                          <div className="flex flex-col sm:flex-row sm:items-center space-y-3 sm:space-y-0 sm:space-x-4 min-w-0 flex-1">
+                            <Avatar className="h-12 w-12 flex-shrink-0">
                               <AvatarFallback className="bg-primary text-primary-foreground">
                                 {client.full_name ? getInitials(client.full_name) : 'U'}
                               </AvatarFallback>
                             </Avatar>
-                            <div>
-                              <h3 className="font-semibold text-foreground">
+                            <div className="min-w-0 flex-1">
+                              <h3 className="font-semibold text-foreground text-wrap">
                                 {client.full_name || 'Unknown User'}
                               </h3>
-                              <div className="flex items-center space-x-4 text-sm text-muted-foreground">
-                                <span className="flex items-center">
-                                  <Building2 className="h-4 w-4 mr-1" />
+                              <div className="flex flex-col sm:flex-row sm:items-center space-y-1 sm:space-y-0 sm:space-x-4 text-sm text-muted-foreground">
+                                <span className="flex items-center text-wrap">
+                                  <Building2 className="h-4 w-4 mr-1 flex-shrink-0" />
                                   {client.company_name || 'No company'}
                                 </span>
-                                <span className="flex items-center">
-                                  <Phone className="h-4 w-4 mr-1" />
+                                <span className="flex items-center text-wrap">
+                                  <Phone className="h-4 w-4 mr-1 flex-shrink-0" />
                                   {client.phone_number}
                                 </span>
-                                <span className="flex items-center">
-                                  <Calendar className="h-4 w-4 mr-1" />
+                                <span className="flex items-center text-wrap">
+                                  <Calendar className="h-4 w-4 mr-1 flex-shrink-0" />
                                   Joined {formatDate(client.created_at)}
                                 </span>
                               </div>
                             </div>
                           </div>
                           
-                          <div className="flex items-center space-x-4">
-                            <div className="text-right">
+                          <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
+                            <div className="text-left sm:text-right">
                               <p className="font-medium text-foreground">{client.project_count} Projects</p>
                               {client.has_new_content && (
-                                <Badge variant="secondary" className="bg-green-100 text-green-800">
+                                <Badge variant="secondary" className="bg-green-100 text-green-800 w-fit">
                                   NEW CONTENT
                                 </Badge>
                               )}
                             </div>
-                            <Button variant="outline" size="sm" asChild>
+                            <Button variant="outline" size="sm" asChild className="w-full sm:w-auto">
                               <Link to={`/admin/client/${client.id}`}>
                                 <Eye className="h-4 w-4 mr-2" />
                                 View Details
@@ -578,15 +554,247 @@ const AdminDashboard = () => {
               <AdminMessaging />
             )}
 
-            {(activeTab === 'projects' || activeTab === 'settings') && (
-              <Card className="border-border-light">
-                <CardContent className="py-12 text-center">
-                  <div className="text-muted-foreground">
-                    <h3 className="text-lg font-semibold mb-2">Coming Soon</h3>
-                    <p>This section is under development and will be available soon.</p>
+            {activeTab === 'projects' && (
+              <div className="space-y-6">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div>
+                    <h2 className="text-2xl font-bold text-foreground">Project Management</h2>
+                    <p className="text-muted-foreground">
+                      Monitor and manage all client projects
+                    </p>
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+
+                {/* Project Stats Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <Card className="border-border-light">
+                    <CardContent className="p-6">
+                      <div className="flex items-center space-x-2">
+                        <Clock className="h-8 w-8 text-blue-600" />
+                        <div>
+                          <p className="text-2xl font-bold text-foreground">{stats.active_projects}</p>
+                          <p className="text-sm text-muted-foreground">Active Projects</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="border-border-light">
+                    <CardContent className="p-6">
+                      <div className="flex items-center space-x-2">
+                        <CheckCircle className="h-8 w-8 text-green-600" />
+                        <div>
+                          <p className="text-2xl font-bold text-foreground">{stats.completed_projects}</p>
+                          <p className="text-sm text-muted-foreground">Completed</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="border-border-light">
+                    <CardContent className="p-6">
+                      <div className="flex items-center space-x-2">
+                        <TrendingUp className="h-8 w-8 text-purple-600" />
+                        <div>
+                          <p className="text-2xl font-bold text-foreground">{stats.active_projects + stats.completed_projects}</p>
+                          <p className="text-sm text-muted-foreground">Total Projects</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* All Projects Table */}
+                <Card className="border-border-light">
+                  <CardHeader>
+                    <CardTitle>All Projects</CardTitle>
+                    <CardDescription>
+                      Complete overview of all client projects
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      {clients.map((client) => (
+                        client.projects?.map((project: any) => (
+                          <div key={project.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 border border-border-light rounded-lg gap-4">
+                            <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-4 min-w-0 flex-1">
+                              <div className="min-w-0 flex-1">
+                                <h3 className="font-semibold text-foreground text-wrap">{project.name}</h3>
+                                <p className="text-sm text-muted-foreground text-wrap">
+                                  Client: {client.full_name || 'Unknown'}
+                                </p>
+                              </div>
+                              <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-2">
+                                <Badge className={`${project.status === 'completed' ? 'bg-green-100 text-green-800' : project.status === 'in_progress' ? 'bg-yellow-100 text-yellow-800' : 'bg-blue-100 text-blue-800'}`}>
+                                  {project.status === 'in_progress' ? 'In Progress' : project.status === 'completed' ? 'Completed' : 'Starting'}
+                                </Badge>
+                                <span className="text-sm text-muted-foreground">
+                                  {formatDate(project.updated_at)}
+                                </span>
+                              </div>
+                            </div>
+                            <Button variant="outline" size="sm" asChild className="w-full sm:w-auto">
+                              <Link to={`/admin/client/${client.id}`}>
+                                <Eye className="h-4 w-4 mr-2" />
+                                View Client
+                              </Link>
+                            </Button>
+                          </div>
+                        )) || []
+                      ))}
+                      {clients.every(client => !client.projects || client.projects.length === 0) && (
+                        <div className="text-center py-8">
+                          <FolderOpen className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                          <h3 className="text-lg font-semibold text-foreground mb-2">No projects yet</h3>
+                          <p className="text-muted-foreground">Projects will appear here when clients create them.</p>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+
+            {activeTab === 'settings' && (
+              <div className="space-y-6">
+                <div>
+                  <h2 className="text-2xl font-bold text-foreground">Admin Settings</h2>
+                  <p className="text-muted-foreground">
+                    Configure system settings and preferences
+                  </p>
+                </div>
+
+                {/* System Settings */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <Card className="border-border-light">
+                    <CardHeader>
+                      <CardTitle className="flex items-center space-x-2">
+                        <Settings className="h-5 w-5 text-primary" />
+                        <span>System Configuration</span>
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                        <div>
+                          <p className="font-medium text-foreground">Auto Notifications</p>
+                          <p className="text-sm text-muted-foreground">Receive alerts for client updates</p>
+                        </div>
+                        <Badge variant="secondary" className="bg-green-100 text-green-800 w-fit">
+                          Enabled
+                        </Badge>
+                      </div>
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                        <div>
+                          <p className="font-medium text-foreground">Real-time Updates</p>
+                          <p className="text-sm text-muted-foreground">Live sync of client activities</p>
+                        </div>
+                        <Badge variant="secondary" className="bg-green-100 text-green-800 w-fit">
+                          Active
+                        </Badge>
+                      </div>
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                        <div>
+                          <p className="font-medium text-foreground">Data Backup</p>
+                          <p className="text-sm text-muted-foreground">Automatic daily backups</p>
+                        </div>
+                        <Badge variant="secondary" className="bg-green-100 text-green-800 w-fit">
+                          Daily
+                        </Badge>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="border-border-light">
+                    <CardHeader>
+                      <CardTitle className="flex items-center space-x-2">
+                        <Users className="h-5 w-5 text-primary" />
+                        <span>User Management</span>
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="space-y-2">
+                        <p className="font-medium text-foreground">Total Registered Clients</p>
+                        <p className="text-2xl font-bold text-primary">{stats.total_clients}</p>
+                      </div>
+                      <div className="space-y-2">
+                        <p className="font-medium text-foreground">Active This Month</p>
+                        <p className="text-2xl font-bold text-blue-600">
+                          {clients.filter(client => 
+                            client.projects?.some((p: any) => 
+                              new Date(p.updated_at).getTime() > Date.now() - 30 * 24 * 60 * 60 * 1000
+                            )
+                          ).length}
+                        </p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Admin Actions */}
+                <Card className="border-border-light">
+                  <CardHeader>
+                    <CardTitle>Admin Actions</CardTitle>
+                    <CardDescription>
+                      Quick actions for system management
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                      <Button variant="outline" className="h-auto p-4 flex flex-col items-center space-y-2">
+                        <MessageSquare className="h-6 w-6 text-primary" />
+                        <span className="text-sm font-medium">Broadcast Message</span>
+                        <span className="text-xs text-muted-foreground">Send to all clients</span>
+                      </Button>
+                      <Button variant="outline" className="h-auto p-4 flex flex-col items-center space-y-2">
+                        <Bell className="h-6 w-6 text-primary" />
+                        <span className="text-sm font-medium">System Alert</span>
+                        <span className="text-xs text-muted-foreground">Create announcement</span>
+                      </Button>
+                      <Button variant="outline" className="h-auto p-4 flex flex-col items-center space-y-2">
+                        <BarChart3 className="h-6 w-6 text-primary" />
+                        <span className="text-sm font-medium">Generate Report</span>
+                        <span className="text-xs text-muted-foreground">Client activity report</span>
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Recent Activity Log */}
+                <Card className="border-border-light">
+                  <CardHeader>
+                    <CardTitle>Recent System Activity</CardTitle>
+                    <CardDescription>
+                      Latest admin and system events
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {clients.slice(0, 5).map((client, index) => (
+                        <div key={client.id} className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-3 p-3 rounded-lg bg-muted/30">
+                          <div className="flex items-center space-x-3 min-w-0 flex-1">
+                            <Avatar className="h-8 w-8 flex-shrink-0">
+                              <AvatarFallback className="bg-primary text-primary-foreground text-xs">
+                                {client.full_name ? getInitials(client.full_name) : 'U'}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="min-w-0 flex-1">
+                              <p className="text-sm font-medium text-foreground text-wrap">
+                                {client.full_name || 'Client'} updated project
+                              </p>
+                              <p className="text-xs text-muted-foreground text-wrap">
+                                {formatDate(client.updated_at)}
+                              </p>
+                            </div>
+                          </div>
+                          <Badge variant="secondary" className="bg-blue-100 text-blue-800 w-fit">
+                            Project Update
+                          </Badge>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
             )}
           </div>
         </div>
