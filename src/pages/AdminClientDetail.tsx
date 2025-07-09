@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
@@ -31,7 +33,9 @@ import {
   CheckCircle,
   AlertCircle,
   Trash2,
-  AlertTriangle
+  AlertTriangle,
+  Save,
+  Download
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -86,6 +90,14 @@ const AdminClientDetail = () => {
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [deleteProjectId, setDeleteProjectId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [editForm, setEditForm] = useState({
+    full_name: '',
+    company_name: '',
+    phone_number: ''
+  });
 
   // Auto-select first project when switching to deliverables tab
   useEffect(() => {
@@ -93,6 +105,142 @@ const AdminClientDetail = () => {
       setSelectedProjectId(projects[0].id);
     }
   }, [activeTab, projects, selectedProjectId]);
+
+  // Initialize edit form when client data is loaded
+  useEffect(() => {
+    if (client) {
+      setEditForm({
+        full_name: client.full_name || '',
+        company_name: client.company_name || '',
+        phone_number: client.phone_number || ''
+      });
+    }
+  }, [client]);
+
+  // Function to open edit modal
+  const openEditModal = () => {
+    if (client) {
+      setEditForm({
+        full_name: client.full_name || '',
+        company_name: client.company_name || '',
+        phone_number: client.phone_number || ''
+      });
+      setIsEditModalOpen(true);
+    }
+  };
+
+  // Function to save client changes
+  const saveClientChanges = async () => {
+    if (!client) return;
+
+    setIsSaving(true);
+    try {
+      const { error } = await supabase
+        .from('users')
+        .update({
+          full_name: editForm.full_name.trim(),
+          company_name: editForm.company_name.trim(),
+          phone_number: editForm.phone_number.trim(),
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', client.id);
+
+      if (error) {
+        console.error('Error updating client:', error);
+        toast({
+          title: "Error",
+          description: "Failed to update client information",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Update local state
+      setClient(prev => prev ? {
+        ...prev,
+        full_name: editForm.full_name.trim(),
+        company_name: editForm.company_name.trim(),
+        phone_number: editForm.phone_number.trim(),
+        updated_at: new Date().toISOString()
+      } : null);
+
+      toast({
+        title: "Success",
+        description: "Client information updated successfully",
+      });
+
+      setIsEditModalOpen(false);
+
+    } catch (error) {
+      console.error('Error updating client:', error);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Function to export client data
+  const exportClientData = async () => {
+    if (!client) return;
+
+    setIsExporting(true);
+    try {
+      // Gather all client data
+      const exportData = {
+        client_info: {
+          id: client.id,
+          full_name: client.full_name,
+          company_name: client.company_name,
+          phone_number: client.phone_number,
+          created_at: client.created_at,
+          updated_at: client.updated_at
+        },
+        projects: projects.map(project => ({
+          id: project.id,
+          name: project.name,
+          status: project.status,
+          created_at: project.created_at,
+          updated_at: project.updated_at,
+          folders: project.folders || []
+        })),
+        export_metadata: {
+          exported_at: new Date().toISOString(),
+          exported_by: user?.full_name || 'Admin',
+          total_projects: projects.length
+        }
+      };
+
+      // Create and download JSON file
+      const dataStr = JSON.stringify(exportData, null, 2);
+      const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+
+      const exportFileDefaultName = `client_${client.full_name?.replace(/\s+/g, '_') || 'data'}_${new Date().toISOString().split('T')[0]}.json`;
+
+      const linkElement = document.createElement('a');
+      linkElement.setAttribute('href', dataUri);
+      linkElement.setAttribute('download', exportFileDefaultName);
+      linkElement.click();
+
+      toast({
+        title: "Export Complete",
+        description: "Client data has been exported successfully",
+      });
+
+    } catch (error) {
+      console.error('Error exporting client data:', error);
+      toast({
+        title: "Export Error",
+        description: "Failed to export client data",
+        variant: "destructive",
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   // Fetch client data
   useEffect(() => {
@@ -945,26 +1093,21 @@ const AdminClientDetail = () => {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => {
-                            toast({
-                              title: "Feature Coming Soon",
-                              description: "Client account management features will be available soon",
-                            });
-                          }}
+                          onClick={openEditModal}
+                          className="flex items-center gap-2"
                         >
+                          <Edit className="h-4 w-4" />
                           Edit Client Info
                         </Button>
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => {
-                            toast({
-                              title: "Feature Coming Soon",
-                              description: "Export client data functionality will be available soon",
-                            });
-                          }}
+                          onClick={exportClientData}
+                          disabled={isExporting}
+                          className="flex items-center gap-2"
                         >
-                          Export Data
+                          <Download className="h-4 w-4" />
+                          {isExporting ? 'Exporting...' : 'Export Data'}
                         </Button>
                       </div>
                     </div>
@@ -975,6 +1118,68 @@ const AdminClientDetail = () => {
           </div>
         </div>
       </div>
+
+      {/* Edit Client Modal */}
+      <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Client Information</DialogTitle>
+            <DialogDescription>
+              Update the client's account information
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-full-name">Full Name</Label>
+              <Input
+                id="edit-full-name"
+                value={editForm.full_name}
+                onChange={(e) => setEditForm(prev => ({ ...prev, full_name: e.target.value }))}
+                placeholder="Enter full name"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="edit-company-name">Company Name</Label>
+              <Input
+                id="edit-company-name"
+                value={editForm.company_name}
+                onChange={(e) => setEditForm(prev => ({ ...prev, company_name: e.target.value }))}
+                placeholder="Enter company name"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="edit-phone-number">Phone Number</Label>
+              <Input
+                id="edit-phone-number"
+                value={editForm.phone_number}
+                onChange={(e) => setEditForm(prev => ({ ...prev, phone_number: e.target.value }))}
+                placeholder="Enter phone number"
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsEditModalOpen(false)}
+              disabled={isSaving}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={saveClientChanges}
+              disabled={isSaving}
+              className="flex items-center gap-2"
+            >
+              <Save className="h-4 w-4" />
+              {isSaving ? 'Saving...' : 'Save Changes'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Delete Project Confirmation Dialog */}
       <Dialog open={!!deleteProjectId} onOpenChange={() => setDeleteProjectId(null)}>

@@ -120,13 +120,29 @@ const FileUpload: React.FC<FileUploadProps> = ({
         });
       }, 200);
 
-      // In a real implementation, you would upload to Supabase Storage:
-      // const { data, error } = await supabase.storage
-      //   .from('files')
-      //   .upload(filePath, file);
+      // Upload to Supabase Storage
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('deliverables')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
 
-      // For demo purposes, we'll simulate the upload
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      if (uploadError) {
+        console.error('Upload error:', uploadError);
+        setUploadProgress(prev => {
+          const newProgress = { ...prev };
+          delete newProgress[fileId];
+          return newProgress;
+        });
+
+        toast({
+          title: "Upload Failed",
+          description: `Failed to upload ${file.name}`,
+          variant: "destructive",
+        });
+        return;
+      }
 
       // Complete progress
       setUploadProgress(prev => ({ ...prev, [fileId]: 100 }));

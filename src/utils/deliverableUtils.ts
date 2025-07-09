@@ -140,68 +140,7 @@ export const fixBrokenDeliverable = async (deliverableId: string) => {
   }
 };
 
-/**
- * Creates a test deliverable with a real file
- */
-export const createTestDeliverable = async (projectId: string) => {
-  try {
-    // Create a test file
-    const testContent = `Test Deliverable File
-Created: ${new Date().toISOString()}
-Project ID: ${projectId}
 
-This is a test file to verify deliverable download functionality.`;
-
-    const testFile = new File([testContent], 'test-deliverable.txt', {
-      type: 'text/plain'
-    });
-
-    // Generate unique filename
-    const fileName = `test-${Date.now()}-deliverable.txt`;
-    const filePath = `deliverables/${projectId}/${fileName}`;
-
-    // Upload file
-    const { data: uploadData, error: uploadError } = await supabase.storage
-      .from('deliverables')
-      .upload(filePath, testFile, {
-        cacheControl: '3600',
-        upsert: false
-      });
-
-    if (uploadError) {
-      return { success: false, error: uploadError.message };
-    }
-
-    // Create deliverable record
-    const { data: deliverable, error: createError } = await supabase
-      .from('deliverables')
-      .insert({
-        project_id: projectId,
-        title: 'Test Deliverable',
-        description: 'Test deliverable for download functionality verification',
-        deliverable_type: 'file',
-        file_path: filePath,
-        is_sent: true,
-        sent_at: new Date().toISOString()
-      })
-      .select()
-      .single();
-
-    if (createError) {
-      return { success: false, error: createError.message };
-    }
-
-    return {
-      success: true,
-      deliverable,
-      filePath,
-      uploadData
-    };
-
-  } catch (error) {
-    return { success: false, error: `Creation error: ${error}` };
-  }
-};
 
 // Make functions available in browser console for testing
 if (typeof window !== 'undefined') {

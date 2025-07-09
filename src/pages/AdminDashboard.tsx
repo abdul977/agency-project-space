@@ -7,12 +7,12 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { 
-  Users, 
-  FolderOpen, 
-  MessageSquare, 
-  Bell, 
-  Settings, 
+import {
+  Users,
+  FolderOpen,
+  MessageSquare,
+  Bell,
+  Settings,
   LogOut,
   Search,
   Filter,
@@ -24,12 +24,24 @@ import {
   TrendingUp,
   Clock,
   CheckCircle,
-  X
+  X,
+  Package,
+  AlertTriangle,
+  HardDrive,
+  Shield
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import NotificationDropdown from "@/components/NotificationDropdown";
 import AdminMessaging from "@/components/AdminMessaging";
+import AdminSettings from "@/components/AdminSettings";
+import AdminBroadcastMessaging from "@/components/AdminBroadcastMessaging";
+import AdminSystemAlerts from "@/components/AdminSystemAlerts";
+import AdminAdvancedProjectManager from "@/components/AdminAdvancedProjectManager";
+import AdminUserManagement from "@/components/AdminUserManagement";
+import AdminAnalytics from "@/components/AdminAnalytics";
+import AdminFileStorage from "@/components/AdminFileStorage";
+import AdminSecurity from "@/components/AdminSecurity";
 
 interface ClientData {
   id: string;
@@ -302,6 +314,14 @@ const AdminDashboard = () => {
                   <Users className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
                   Clients
                 </Button>
+                <Button
+                  variant={activeTab === 'users' ? 'default' : 'ghost'}
+                  className="flex-shrink-0 px-2 sm:px-3 py-2 text-xs sm:text-sm whitespace-nowrap"
+                  onClick={() => setActiveTab('users')}
+                >
+                  <Users className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                  Users
+                </Button>
 
                 <Button
                   variant={activeTab === 'projects' ? 'default' : 'ghost'}
@@ -320,6 +340,46 @@ const AdminDashboard = () => {
                   <MessageSquare className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
                   Messages
                 </Button>
+                <Button
+                  variant={activeTab === 'broadcast' ? 'default' : 'ghost'}
+                  className="flex-shrink-0 px-2 sm:px-3 py-2 text-xs sm:text-sm whitespace-nowrap"
+                  onClick={() => setActiveTab('broadcast')}
+                >
+                  <Bell className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                  Broadcast
+                </Button>
+                <Button
+                  variant={activeTab === 'alerts' ? 'default' : 'ghost'}
+                  className="flex-shrink-0 px-2 sm:px-3 py-2 text-xs sm:text-sm whitespace-nowrap"
+                  onClick={() => setActiveTab('alerts')}
+                >
+                  <AlertTriangle className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                  Alerts
+                </Button>
+                <Button
+                  variant={activeTab === 'analytics' ? 'default' : 'ghost'}
+                  className="flex-shrink-0 px-2 sm:px-3 py-2 text-xs sm:text-sm whitespace-nowrap"
+                  onClick={() => setActiveTab('analytics')}
+                >
+                  <BarChart3 className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                  Analytics
+                </Button>
+                <Button
+                  variant={activeTab === 'storage' ? 'default' : 'ghost'}
+                  className="flex-shrink-0 px-2 sm:px-3 py-2 text-xs sm:text-sm whitespace-nowrap"
+                  onClick={() => setActiveTab('storage')}
+                >
+                  <HardDrive className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                  Storage
+                </Button>
+                <Button
+                  variant={activeTab === 'security' ? 'default' : 'ghost'}
+                  className="flex-shrink-0 px-2 sm:px-3 py-2 text-xs sm:text-sm whitespace-nowrap"
+                  onClick={() => setActiveTab('security')}
+                >
+                  <Shield className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                  Security
+                </Button>
 
                 <Button
                   variant={activeTab === 'settings' ? 'default' : 'ghost'}
@@ -328,6 +388,26 @@ const AdminDashboard = () => {
                 >
                   <Settings className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
                   Settings
+                </Button>
+                <Button
+                  variant="ghost"
+                  className="flex-shrink-0 px-2 sm:px-3 py-2 text-xs sm:text-sm whitespace-nowrap"
+                  asChild
+                >
+                  <Link to="/admin/deliverables">
+                    <Package className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                    Deliverables
+                  </Link>
+                </Button>
+                <Button
+                  variant="ghost"
+                  className="flex-shrink-0 px-2 sm:px-3 py-2 text-xs sm:text-sm whitespace-nowrap"
+                  asChild
+                >
+                  <Link to="/admin/deliverables">
+                    <FolderOpen className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                    Deliverables
+                  </Link>
                 </Button>
               </div>
             </div>
@@ -358,6 +438,15 @@ const AdminDashboard = () => {
                 </Button>
 
                 <Button
+                  variant={activeTab === 'users' ? 'default' : 'ghost'}
+                  className="w-full justify-start text-sm lg:text-base py-2 lg:py-2.5"
+                  onClick={() => setActiveTab('users')}
+                >
+                  <Users className="h-4 w-4 lg:h-5 lg:w-5 mr-2 lg:mr-3" />
+                  User Management
+                </Button>
+
+                <Button
                   variant={activeTab === 'projects' ? 'default' : 'ghost'}
                   className="w-full justify-start text-sm lg:text-base py-2 lg:py-2.5"
                   onClick={() => setActiveTab('projects')}
@@ -376,12 +465,68 @@ const AdminDashboard = () => {
                 </Button>
 
                 <Button
+                  variant={activeTab === 'broadcast' ? 'default' : 'ghost'}
+                  className="w-full justify-start text-sm lg:text-base py-2 lg:py-2.5"
+                  onClick={() => setActiveTab('broadcast')}
+                >
+                  <Bell className="h-4 w-4 lg:h-5 lg:w-5 mr-2 lg:mr-3" />
+                  Broadcast Messaging
+                </Button>
+
+                <Button
+                  variant={activeTab === 'alerts' ? 'default' : 'ghost'}
+                  className="w-full justify-start text-sm lg:text-base py-2 lg:py-2.5"
+                  onClick={() => setActiveTab('alerts')}
+                >
+                  <AlertTriangle className="h-4 w-4 lg:h-5 lg:w-5 mr-2 lg:mr-3" />
+                  System Alerts
+                </Button>
+
+                <Button
+                  variant={activeTab === 'analytics' ? 'default' : 'ghost'}
+                  className="w-full justify-start text-sm lg:text-base py-2 lg:py-2.5"
+                  onClick={() => setActiveTab('analytics')}
+                >
+                  <BarChart3 className="h-4 w-4 lg:h-5 lg:w-5 mr-2 lg:mr-3" />
+                  Analytics & Reports
+                </Button>
+
+                <Button
+                  variant={activeTab === 'storage' ? 'default' : 'ghost'}
+                  className="w-full justify-start text-sm lg:text-base py-2 lg:py-2.5"
+                  onClick={() => setActiveTab('storage')}
+                >
+                  <HardDrive className="h-4 w-4 lg:h-5 lg:w-5 mr-2 lg:mr-3" />
+                  File Storage
+                </Button>
+
+                <Button
+                  variant={activeTab === 'security' ? 'default' : 'ghost'}
+                  className="w-full justify-start text-sm lg:text-base py-2 lg:py-2.5"
+                  onClick={() => setActiveTab('security')}
+                >
+                  <Shield className="h-4 w-4 lg:h-5 lg:w-5 mr-2 lg:mr-3" />
+                  Security & Audit
+                </Button>
+
+                <Button
                   variant={activeTab === 'settings' ? 'default' : 'ghost'}
                   className="w-full justify-start text-sm lg:text-base py-2 lg:py-2.5"
                   onClick={() => setActiveTab('settings')}
                 >
                   <Settings className="h-4 w-4 lg:h-5 lg:w-5 mr-2 lg:mr-3" />
                   Settings
+                </Button>
+
+                <Button
+                  variant="ghost"
+                  className="w-full justify-start text-sm lg:text-base py-2 lg:py-2.5"
+                  asChild
+                >
+                  <Link to="/admin/deliverables">
+                    <Package className="h-4 w-4 lg:h-5 lg:w-5 mr-2 lg:mr-3" />
+                    Deliverables Management
+                  </Link>
                 </Button>
               </CardContent>
             </Card>
@@ -673,247 +818,36 @@ const AdminDashboard = () => {
               <AdminMessaging />
             )}
 
+            {activeTab === 'broadcast' && (
+              <AdminBroadcastMessaging />
+            )}
+
+            {activeTab === 'alerts' && (
+              <AdminSystemAlerts />
+            )}
+
             {activeTab === 'projects' && (
-              <div className="space-y-6">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                  <div>
-                    <h2 className="text-2xl font-bold text-foreground">Project Management</h2>
-                    <p className="text-muted-foreground">
-                      Monitor and manage all client projects
-                    </p>
-                  </div>
-                </div>
-
-                {/* Project Stats Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <Card className="border-border-light">
-                    <CardContent className="p-6">
-                      <div className="flex items-center space-x-2">
-                        <Clock className="h-8 w-8 text-blue-600" />
-                        <div>
-                          <p className="text-2xl font-bold text-foreground">{stats.active_projects}</p>
-                          <p className="text-sm text-muted-foreground">Active Projects</p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  <Card className="border-border-light">
-                    <CardContent className="p-6">
-                      <div className="flex items-center space-x-2">
-                        <CheckCircle className="h-8 w-8 text-green-600" />
-                        <div>
-                          <p className="text-2xl font-bold text-foreground">{stats.completed_projects}</p>
-                          <p className="text-sm text-muted-foreground">Completed</p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  <Card className="border-border-light">
-                    <CardContent className="p-6">
-                      <div className="flex items-center space-x-2">
-                        <TrendingUp className="h-8 w-8 text-purple-600" />
-                        <div>
-                          <p className="text-2xl font-bold text-foreground">{stats.active_projects + stats.completed_projects}</p>
-                          <p className="text-sm text-muted-foreground">Total Projects</p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-
-                {/* All Projects Table */}
-                <Card className="border-border-light">
-                  <CardHeader>
-                    <CardTitle>All Projects</CardTitle>
-                    <CardDescription>
-                      Complete overview of all client projects
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      {clients.map((client) => (
-                        client.projects?.map((project: any) => (
-                          <div key={project.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 border border-border-light rounded-lg gap-4">
-                            <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-4 min-w-0 flex-1">
-                              <div className="min-w-0 flex-1">
-                                <h3 className="font-semibold text-foreground text-wrap">{project.name}</h3>
-                                <p className="text-sm text-muted-foreground text-wrap">
-                                  Client: {client.full_name || 'Unknown'}
-                                </p>
-                              </div>
-                              <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-2">
-                                <Badge className={`${project.status === 'completed' ? 'bg-green-100 text-green-800' : project.status === 'in_progress' ? 'bg-yellow-100 text-yellow-800' : 'bg-blue-100 text-blue-800'}`}>
-                                  {project.status === 'in_progress' ? 'In Progress' : project.status === 'completed' ? 'Completed' : 'Starting'}
-                                </Badge>
-                                <span className="text-sm text-muted-foreground">
-                                  {formatDate(project.updated_at)}
-                                </span>
-                              </div>
-                            </div>
-                            <Button variant="outline" size="sm" asChild className="w-full sm:w-auto">
-                              <Link to={`/admin/client/${client.id}`}>
-                                <Eye className="h-4 w-4 mr-2" />
-                                View Client
-                              </Link>
-                            </Button>
-                          </div>
-                        )) || []
-                      ))}
-                      {clients.every(client => !client.projects || client.projects.length === 0) && (
-                        <div className="text-center py-8">
-                          <FolderOpen className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                          <h3 className="text-lg font-semibold text-foreground mb-2">No projects yet</h3>
-                          <p className="text-muted-foreground">Projects will appear here when clients create them.</p>
-                        </div>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
+              <AdminAdvancedProjectManager />
             )}
 
             {activeTab === 'settings' && (
-              <div className="space-y-6">
-                <div>
-                  <h2 className="text-2xl font-bold text-foreground">Admin Settings</h2>
-                  <p className="text-muted-foreground">
-                    Configure system settings and preferences
-                  </p>
-                </div>
+              <AdminSettings />
+            )}
 
-                {/* System Settings */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <Card className="border-border-light">
-                    <CardHeader>
-                      <CardTitle className="flex items-center space-x-2">
-                        <Settings className="h-5 w-5 text-primary" />
-                        <span>System Configuration</span>
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                        <div>
-                          <p className="font-medium text-foreground">Auto Notifications</p>
-                          <p className="text-sm text-muted-foreground">Receive alerts for client updates</p>
-                        </div>
-                        <Badge variant="secondary" className="bg-green-100 text-green-800 w-fit">
-                          Enabled
-                        </Badge>
-                      </div>
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                        <div>
-                          <p className="font-medium text-foreground">Real-time Updates</p>
-                          <p className="text-sm text-muted-foreground">Live sync of client activities</p>
-                        </div>
-                        <Badge variant="secondary" className="bg-green-100 text-green-800 w-fit">
-                          Active
-                        </Badge>
-                      </div>
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                        <div>
-                          <p className="font-medium text-foreground">Data Backup</p>
-                          <p className="text-sm text-muted-foreground">Automatic daily backups</p>
-                        </div>
-                        <Badge variant="secondary" className="bg-green-100 text-green-800 w-fit">
-                          Daily
-                        </Badge>
-                      </div>
-                    </CardContent>
-                  </Card>
+            {activeTab === 'users' && (
+              <AdminUserManagement />
+            )}
 
-                  <Card className="border-border-light">
-                    <CardHeader>
-                      <CardTitle className="flex items-center space-x-2">
-                        <Users className="h-5 w-5 text-primary" />
-                        <span>User Management</span>
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div className="space-y-2">
-                        <p className="font-medium text-foreground">Total Registered Clients</p>
-                        <p className="text-2xl font-bold text-primary">{stats.total_clients}</p>
-                      </div>
-                      <div className="space-y-2">
-                        <p className="font-medium text-foreground">Active This Month</p>
-                        <p className="text-2xl font-bold text-blue-600">
-                          {clients.filter(client => 
-                            client.projects?.some((p: any) => 
-                              new Date(p.updated_at).getTime() > Date.now() - 30 * 24 * 60 * 60 * 1000
-                            )
-                          ).length}
-                        </p>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
+            {activeTab === 'analytics' && (
+              <AdminAnalytics />
+            )}
 
-                {/* Admin Actions */}
-                <Card className="border-border-light">
-                  <CardHeader>
-                    <CardTitle>Admin Actions</CardTitle>
-                    <CardDescription>
-                      Quick actions for system management
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                      <Button variant="outline" className="h-auto p-4 flex flex-col items-center space-y-2">
-                        <MessageSquare className="h-6 w-6 text-primary" />
-                        <span className="text-sm font-medium">Broadcast Message</span>
-                        <span className="text-xs text-muted-foreground">Send to all clients</span>
-                      </Button>
-                      <Button variant="outline" className="h-auto p-4 flex flex-col items-center space-y-2">
-                        <Bell className="h-6 w-6 text-primary" />
-                        <span className="text-sm font-medium">System Alert</span>
-                        <span className="text-xs text-muted-foreground">Create announcement</span>
-                      </Button>
-                      <Button variant="outline" className="h-auto p-4 flex flex-col items-center space-y-2">
-                        <BarChart3 className="h-6 w-6 text-primary" />
-                        <span className="text-sm font-medium">Generate Report</span>
-                        <span className="text-xs text-muted-foreground">Client activity report</span>
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
+            {activeTab === 'storage' && (
+              <AdminFileStorage />
+            )}
 
-                {/* Recent Activity Log */}
-                <Card className="border-border-light">
-                  <CardHeader>
-                    <CardTitle>Recent System Activity</CardTitle>
-                    <CardDescription>
-                      Latest admin and system events
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-3">
-                      {clients.slice(0, 5).map((client, index) => (
-                        <div key={client.id} className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-3 p-3 rounded-lg bg-muted/30">
-                          <div className="flex items-center space-x-3 min-w-0 flex-1">
-                            <Avatar className="h-8 w-8 flex-shrink-0">
-                              <AvatarFallback className="bg-primary text-primary-foreground text-xs">
-                                {client.full_name ? getInitials(client.full_name) : 'U'}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div className="min-w-0 flex-1">
-                              <p className="text-sm font-medium text-foreground text-wrap">
-                                {client.full_name || 'Client'} updated project
-                              </p>
-                              <p className="text-xs text-muted-foreground text-wrap">
-                                {formatDate(client.updated_at)}
-                              </p>
-                            </div>
-                          </div>
-                          <Badge variant="secondary" className="bg-blue-100 text-blue-800 w-fit">
-                            Project Update
-                          </Badge>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
+            {activeTab === 'security' && (
+              <AdminSecurity />
             )}
           </div>
         </div>

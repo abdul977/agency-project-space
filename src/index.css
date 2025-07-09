@@ -112,6 +112,46 @@
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 3;
   }
+
+  /* Chat interface scroll improvements */
+  .chat-scroll-area {
+    height: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+    scroll-behavior: smooth;
+  }
+
+  .chat-scroll-area::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .chat-scroll-area::-webkit-scrollbar-track {
+    background: hsl(var(--muted));
+    border-radius: 3px;
+  }
+
+  .chat-scroll-area::-webkit-scrollbar-thumb {
+    background: hsl(var(--border));
+    border-radius: 3px;
+  }
+
+  .chat-scroll-area::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--muted-foreground) / 0.5);
+  }
+
+  /* Ensure proper flex behavior for chat */
+  .chat-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+  }
+
+  .chat-messages {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+  }
 }
 
 /* Muahib Solution Design System - Clean White & Black Whitespace Theme */
