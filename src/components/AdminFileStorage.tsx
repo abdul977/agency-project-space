@@ -59,6 +59,7 @@ interface StorageFile {
   is_orphaned: boolean;
   last_accessed: string;
   download_count: number;
+  source: 'deliverable' | 'input_attachment';
 }
 
 interface StorageStats {
@@ -84,6 +85,7 @@ const AdminFileStorage = () => {
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [sizeFilter, setSizeFilter] = useState<string>('all');
+  const [sourceFilter, setSourceFilter] = useState<string>('all');
   const [activeTab, setActiveTab] = useState('files');
   const [isCleanupModalOpen, setIsCleanupModalOpen] = useState(false);
   const [isBulkOperating, setIsBulkOperating] = useState(false);
@@ -133,7 +135,63 @@ const AdminFileStorage = () => {
             .eq('file_path', file.name)
             .single();
 
+          // Try to find associated input attachment record
+          const { data: inputAttachment } = await supabase
+            .from('input_attachments')
+            .select(`
+              id,
+              folder_input_id,
+              file_name,
+              file_path,
+              file_size,
+              file_type,
+              uploaded_at,
+              folder_inputs (
+                id,
+                folders (
+                  id,
+                  name,
+                  project_id,
+                  projects (
+                    id,
+                    name,
+                    user_id,
+                    users (
+                      id,
+                      full_name
+                    )
+                  )
+                )
+              )
+            `)
+            .eq('file_path', file.name)
+            .single();
+
           const fileType = getFileType(file.metadata?.mimetype || '');
+
+          // Determine owner and project info from either deliverable or input attachment
+          let ownerId = 'unknown';
+          let ownerName = 'Unknown';
+          let projectId = undefined;
+          let projectName = undefined;
+          let isOrphaned = true;
+          let source: 'deliverable' | 'input_attachment' = 'deliverable';
+
+          if (deliverable) {
+            ownerId = deliverable.projects?.users?.id || 'unknown';
+            ownerName = deliverable.projects?.users?.full_name || 'Unknown';
+            projectId = deliverable.project_id;
+            projectName = deliverable.projects?.name;
+            isOrphaned = false;
+            source = 'deliverable';
+          } else if (inputAttachment) {
+            ownerId = inputAttachment.folder_inputs?.folders?.projects?.users?.id || 'unknown';
+            ownerName = inputAttachment.folder_inputs?.folders?.projects?.users?.full_name || 'Unknown';
+            projectId = inputAttachment.folder_inputs?.folders?.project_id;
+            projectName = inputAttachment.folder_inputs?.folders?.projects?.name;
+            isOrphaned = false;
+            source = 'input_attachment';
+          }
 
           filesWithMetadata.push({
             id: file.id || file.name,
@@ -144,13 +202,14 @@ const AdminFileStorage = () => {
             mime_type: file.metadata?.mimetype || 'application/octet-stream',
             created_at: file.created_at,
             updated_at: file.updated_at,
-            owner_id: deliverable?.projects?.users?.id || 'unknown',
-            owner_name: deliverable?.projects?.users?.full_name || 'Unknown',
-            project_id: deliverable?.project_id,
-            project_name: deliverable?.projects?.name,
-            is_orphaned: !deliverable,
+            owner_id: ownerId,
+            owner_name: ownerName,
+            project_id: projectId,
+            project_name: projectName,
+            is_orphaned: isOrphaned,
             last_accessed: file.last_accessed_at || file.created_at,
-            download_count: 0 // Would need separate tracking table
+            download_count: 0, // Would need separate tracking table
+            source: source
           });
         }
       }
@@ -213,10 +272,11 @@ const AdminFileStorage = () => {
                          file.project_name?.toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesType = typeFilter === 'all' || file.type === typeFilter;
-    const matchesStatus = statusFilter === 'all' || 
+    const matchesStatus = statusFilter === 'all' ||
       (statusFilter === 'orphaned' && file.is_orphaned) ||
       (statusFilter === 'active' && !file.is_orphaned);
-    
+    const matchesSource = sourceFilter === 'all' || file.source === sourceFilter;
+
     let matchesSize = true;
     if (sizeFilter !== 'all') {
       const sizeMB = file.size / (1024 * 1024);
@@ -232,8 +292,8 @@ const AdminFileStorage = () => {
           break;
       }
     }
-    
-    return matchesSearch && matchesType && matchesStatus && matchesSize;
+
+    return matchesSearch && matchesType && matchesStatus && matchesSize && matchesSource;
   });
 
   const toggleFileSelection = (fileId: string) => {
@@ -612,7 +672,7 @@ const AdminFileStorage = () => {
               </div>
 
               {/* Filter Row */}
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
                 <Select value={typeFilter} onValueChange={setTypeFilter}>
                   <SelectTrigger>
                     <SelectValue placeholder="File type" />
@@ -624,6 +684,17 @@ const AdminFileStorage = () => {
                     <SelectItem value="video">Videos</SelectItem>
                     <SelectItem value="audio">Audio</SelectItem>
                     <SelectItem value="archive">Archives</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <Select value={sourceFilter} onValueChange={setSourceFilter}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Source" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Sources</SelectItem>
+                    <SelectItem value="deliverable">Deliverables</SelectItem>
+                    <SelectItem value="input_attachment">Input Uploads</SelectItem>
                   </SelectContent>
                 </Select>
 
@@ -773,6 +844,9 @@ const AdminFileStorage = () => {
                               </Badge>
                               <Badge variant="outline">
                                 {formatFileSize(file.size)}
+                              </Badge>
+                              <Badge variant={file.source === 'input_attachment' ? 'default' : 'secondary'}>
+                                {file.source === 'input_attachment' ? 'Input Upload' : 'Deliverable'}
                               </Badge>
                               {file.is_orphaned && (
                                 <Badge variant="destructive">
