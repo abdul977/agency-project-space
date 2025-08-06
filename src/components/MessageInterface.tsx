@@ -91,7 +91,7 @@ const MessageInterface: React.FC<MessageInterfaceProps> = ({
   }
 
   return (
-    <Card className="h-80 sm:h-96 lg:h-[28rem] chat-container">
+    <Card className="h-80 sm:h-96 lg:h-[28rem] flex flex-col chat-container">
       <CardHeader className="pb-2 sm:pb-3 px-4 sm:px-6 flex-shrink-0">
         <CardTitle className="flex items-center space-x-2 sm:space-x-3">
           <Avatar className="h-6 w-6 sm:h-8 sm:w-8 shrink-0">
@@ -108,65 +108,67 @@ const MessageInterface: React.FC<MessageInterfaceProps> = ({
         </CardTitle>
       </CardHeader>
 
-      <CardContent className="chat-messages p-0">
+      <CardContent className="flex flex-col flex-1 p-0 min-h-0">
         {/* Messages Area */}
-        <ScrollArea ref={scrollAreaRef} className="h-full chat-scroll-area">
-          <div className="px-3 sm:px-4">
-            {messages.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-full text-center py-6 sm:py-8 min-h-[200px]">
-                <MessageSquare className="h-8 w-8 sm:h-12 sm:w-12 text-muted-foreground mb-3 sm:mb-4" />
-                <p className="text-sm sm:text-base text-muted-foreground">No messages yet</p>
-                <p className="text-xs sm:text-sm text-muted-foreground">Start a conversation!</p>
-              </div>
-            ) : (
-              <div className="space-y-4 py-4">
-                {messages.map((message) => {
-                  const isOwnMessage = message.sender_id === user?.id;
+        <div className="flex-1 min-h-0">
+          <ScrollArea ref={scrollAreaRef} className="h-full chat-scroll-area">
+            <div className="px-3 sm:px-4">
+              {messages.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-full text-center py-6 sm:py-8 min-h-[200px]">
+                  <MessageSquare className="h-8 w-8 sm:h-12 sm:w-12 text-muted-foreground mb-3 sm:mb-4" />
+                  <p className="text-sm sm:text-base text-muted-foreground">No messages yet</p>
+                  <p className="text-xs sm:text-sm text-muted-foreground">Start a conversation!</p>
+                </div>
+              ) : (
+                <div className="space-y-4 py-4">
+                  {messages.map((message) => {
+                    const isOwnMessage = message.sender_id === user?.id;
 
-                  return (
-                    <div
-                      key={message.id}
-                      className={`flex ${isOwnMessage ? 'justify-end' : 'justify-start'}`}
-                    >
-                      <div className={`flex items-start space-x-2 max-w-[70%] ${
-                        isOwnMessage ? 'flex-row-reverse space-x-reverse' : ''
-                      }`}>
-                        <Avatar className="h-6 w-6 flex-shrink-0">
-                          <AvatarFallback className={`text-xs ${
+                    return (
+                      <div
+                        key={message.id}
+                        className={`flex ${isOwnMessage ? 'justify-end' : 'justify-start'}`}
+                      >
+                        <div className={`flex items-start space-x-2 max-w-[70%] ${
+                          isOwnMessage ? 'flex-row-reverse space-x-reverse' : ''
+                        }`}>
+                          <Avatar className="h-6 w-6 flex-shrink-0">
+                            <AvatarFallback className={`text-xs ${
+                              isOwnMessage
+                                ? 'bg-primary text-primary-foreground'
+                                : 'bg-muted text-muted-foreground'
+                            }`}>
+                              {message.sender?.full_name
+                                ? getInitials(message.sender.full_name)
+                                : (message.sender?.is_admin ? 'A' : 'U')
+                              }
+                            </AvatarFallback>
+                          </Avatar>
+
+                          <div className={`rounded-lg px-3 py-2 ${
                             isOwnMessage
                               ? 'bg-primary text-primary-foreground'
-                              : 'bg-muted text-muted-foreground'
+                              : 'bg-muted text-foreground'
                           }`}>
-                            {message.sender?.full_name
-                              ? getInitials(message.sender.full_name)
-                              : (message.sender?.is_admin ? 'A' : 'U')
-                            }
-                          </AvatarFallback>
-                        </Avatar>
-
-                        <div className={`rounded-lg px-3 py-2 ${
-                          isOwnMessage
-                            ? 'bg-primary text-primary-foreground'
-                            : 'bg-muted text-foreground'
-                        }`}>
-                          <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>
-                          <p className={`text-xs mt-1 ${
-                            isOwnMessage
-                              ? 'text-primary-foreground/70'
-                              : 'text-muted-foreground'
-                          }`}>
-                            {formatTime(message.created_at)}
-                          </p>
+                            <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>
+                            <p className={`text-xs mt-1 ${
+                              isOwnMessage
+                                ? 'text-primary-foreground/70'
+                                : 'text-muted-foreground'
+                            }`}>
+                              {formatTime(message.created_at)}
+                            </p>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  );
-                })}
-                <div ref={messagesEndRef} className="h-1" />
-              </div>
-            )}
-          </div>
-        </ScrollArea>
+                    );
+                  })}
+                  <div ref={messagesEndRef} className="h-1" />
+                </div>
+              )}
+            </div>
+          </ScrollArea>
+        </div>
 
         {/* Message Input */}
         <div className="border-t border-border-light p-3 sm:p-4 flex-shrink-0 bg-background">

@@ -2,12 +2,12 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { 
-  Users, 
-  FolderOpen, 
-  MessageSquare, 
-  Shield, 
-  Smartphone, 
+import {
+  Users,
+  FolderOpen,
+  MessageSquare,
+  Shield,
+  Smartphone,
   Monitor,
   ArrowRight,
   CheckCircle,
@@ -18,7 +18,9 @@ import {
   BarChart3,
   Zap,
   Globe,
-  Clock
+  Clock,
+  Phone,
+  Mail
 } from "lucide-react";
 import heroImage from "@/assets/hero-image.jpg";
 
@@ -152,7 +154,7 @@ const Index = () => {
               <div className="flex flex-col sm:flex-row gap-4">
                 <Button variant="hero" size="xl" className="group" asChild>
                   <Link to="/signup">
-                    Start Managing Clients
+                    Get Started Today
                     <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
                   </Link>
                 </Button>
@@ -355,6 +357,20 @@ const Index = () => {
               <p className="text-muted-foreground text-sm">
                 Professional client management platform for modern agencies and service providers.
               </p>
+              <div className="space-y-2">
+                <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+                  <Phone className="h-4 w-4" />
+                  <a href="tel:09025794407" className="hover:text-foreground transition-colors">
+                    09025794407
+                  </a>
+                </div>
+                <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+                  <Mail className="h-4 w-4" />
+                  <a href="mailto:abdulmuminibrahim74@gmail.com" className="hover:text-foreground transition-colors">
+                    abdulmuminibrahim74@gmail.com
+                  </a>
+                </div>
+              </div>
             </div>
 
             <div className="space-y-4">
