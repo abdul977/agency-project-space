@@ -369,7 +369,7 @@ const ProjectDetail = () => {
       if (attachments.length > 0) {
         const filePaths = attachments.map(att => att.file_path);
         const { error: storageError } = await supabase.storage
-          .from('media')
+          .from('deliverables')
           .remove(filePaths);
 
         if (storageError) {
@@ -437,7 +437,7 @@ const ProjectDetail = () => {
       if (allAttachments.length > 0) {
         const filePaths = allAttachments.map(att => att.file_path);
         const { error: storageError } = await supabase.storage
-          .from('media')
+          .from('deliverables')
           .remove(filePaths);
 
         if (storageError) {

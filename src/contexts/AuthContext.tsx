@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User } from '@/lib/auth';
 import { setSession, getSession, deleteSession } from '@/lib/redis';
+import { setSupabaseAuth, clearSupabaseAuth } from '@/lib/supabase-auth';
 
 interface AuthContextType {
   user: User | null;
@@ -62,6 +63,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             const response = await getUserById(userId);
             if (response.success && response.user) {
               setUser(response.user);
+              // Skip Supabase auth session for restored user since we're using custom auth
+              // await setSupabaseAuth(response.user);
             } else {
               // Invalid session, clean up
               await deleteSession(sessionId);
@@ -94,7 +97,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (sessionStored) {
         // Store session ID locally
         storeSessionId(sessionId);
-        
+
+        // Skip Supabase auth session for now since we're using custom auth
+        // const supabaseAuthSet = await setSupabaseAuth(userData);
+        // if (!supabaseAuthSet) {
+        //   console.warn('Failed to set Supabase auth session, but continuing with login');
+        // }
+
         // Update user state
         setUser(userData);
       } else {
@@ -116,7 +125,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         // Remove session ID from localStorage
         removeStoredSessionId();
       }
-      
+
+      // Skip clearing Supabase auth session since we're not using it
+      // await clearSupabaseAuth();
+
       // Clear user state
       setUser(null);
     } catch (error) {

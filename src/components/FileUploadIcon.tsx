@@ -2,17 +2,18 @@ import { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { 
-  Paperclip, 
-  X, 
-  Image, 
-  FileText, 
+import {
+  Paperclip,
+  X,
+  Image,
+  FileText,
   File,
   Download,
   Loader2
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 import {
   Popover,
   PopoverContent,
@@ -49,6 +50,7 @@ const FileUploadIcon: React.FC<FileUploadIconProps> = ({
   const [isOpen, setIsOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+  const { user } = useAuth();
 
   const formatFileSize = (bytes: number): string => {
     if (bytes === 0) return '0 Bytes';
@@ -110,14 +112,27 @@ const FileUploadIcon: React.FC<FileUploadIconProps> = ({
     setUploadProgress(0);
 
     try {
+      // Check authentication
+      if (!user) {
+        toast({
+          title: "Authentication Error",
+          description: "Please log in to upload files",
+          variant: "destructive",
+        });
+        return;
+      }
+
       // Generate unique file path
       const fileExtension = file.name.split('.').pop();
       const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExtension}`;
       const filePath = `input-attachments/${inputId}/${fileName}`;
 
+
+
       // Upload to Supabase Storage
+
       const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('media')
+        .from('deliverables')
         .upload(filePath, file, {
           cacheControl: '3600',
           upsert: false
@@ -125,9 +140,14 @@ const FileUploadIcon: React.FC<FileUploadIconProps> = ({
 
       if (uploadError) {
         console.error('Upload error:', uploadError);
+        console.error('Upload error details:', {
+          message: uploadError.message,
+          statusCode: uploadError.statusCode,
+          error: uploadError.error
+        });
         toast({
           title: "Upload Failed",
-          description: `Failed to upload ${file.name}`,
+          description: `Failed to upload ${file.name}: ${uploadError.message}`,
           variant: "destructive",
         });
         return;
@@ -151,7 +171,7 @@ const FileUploadIcon: React.FC<FileUploadIconProps> = ({
       if (dbError) {
         console.error('Database error:', dbError);
         // Clean up uploaded file
-        await supabase.storage.from('media').remove([filePath]);
+        await supabase.storage.from('deliverables').remove([filePath]);
         toast({
           title: "Upload Failed",
           description: "Failed to save file information",
@@ -208,7 +228,7 @@ const FileUploadIcon: React.FC<FileUploadIconProps> = ({
 
       // Delete from storage
       const { error: storageError } = await supabase.storage
-        .from('media')
+        .from('deliverables')
         .remove([attachment.file_path]);
 
       if (storageError) {
@@ -238,7 +258,7 @@ const FileUploadIcon: React.FC<FileUploadIconProps> = ({
   const handleDownloadAttachment = async (attachment: InputAttachment) => {
     try {
       const { data, error } = await supabase.storage
-        .from('media')
+        .from('deliverables')
         .download(attachment.file_path);
 
       if (error) {
@@ -287,7 +307,7 @@ const FileUploadIcon: React.FC<FileUploadIconProps> = ({
             variant="ghost"
             size="sm"
             className="h-8 w-8 p-0 relative"
-            disabled={isUploading}
+            disabled={isUploading || !user}
           >
             {isUploading ? (
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -313,10 +333,10 @@ const FileUploadIcon: React.FC<FileUploadIconProps> = ({
                 variant="outline"
                 size="sm"
                 onClick={() => fileInputRef.current?.click()}
-                disabled={isUploading}
+                disabled={isUploading || !user}
                 className="h-7 text-xs"
               >
-                Add File
+                {!user ? 'Login Required' : 'Add File'}
               </Button>
             </div>
 

@@ -12,6 +12,7 @@ import Dashboard from "./pages/Dashboard";
 import ProjectDetail from "./pages/ProjectDetail";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminClientDetail from "./pages/AdminClientDetail";
+import TestUpload from "./pages/TestUpload";
 import AdminDeliverables from "./pages/AdminDeliverables";
 import Messages from "./pages/Messages";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -76,6 +77,14 @@ const App = () => (
               element={
                 <ProtectedRoute requireAdmin={true}>
                   <Messages />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/test-upload"
+              element={
+                <ProtectedRoute>
+                  <TestUpload />
                 </ProtectedRoute>
               }
             />
