@@ -34,6 +34,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { notifyAdminOfClientUpdate } from "@/lib/notifications";
 import SecurityManager from "@/lib/security";
+import FileUploadIcon from "@/components/FileUploadIcon";
 
 interface Project {
   id: string;
@@ -53,6 +54,18 @@ interface Folder {
   inputs: FolderInput[];
 }
 
+interface InputAttachment {
+  id: string;
+  folder_input_id: string;
+  file_name: string;
+  file_path: string;
+  file_size: number;
+  file_type: string;
+  uploaded_at: string;
+  created_at: string;
+  updated_at: string;
+}
+
 interface FolderInput {
   id: string;
   folder_id: string;
@@ -60,6 +73,7 @@ interface FolderInput {
   order_index: number;
   created_at: string;
   updated_at: string;
+  attachments?: InputAttachment[];
 }
 
 const ProjectDetail = () => {
@@ -117,7 +131,17 @@ const ProjectDetail = () => {
               content,
               order_index,
               created_at,
-              updated_at
+              updated_at,
+              input_attachments (
+                id,
+                file_name,
+                file_path,
+                file_size,
+                file_type,
+                uploaded_at,
+                created_at,
+                updated_at
+              )
             )
           `)
           .eq('project_id', projectId)
@@ -135,7 +159,8 @@ const ProjectDetail = () => {
             ...folder,
             inputs: folder.folder_inputs?.map(input => ({
               ...input,
-              folder_id: folder.id
+              folder_id: folder.id,
+              attachments: input.input_attachments || []
             })).sort((a, b) => a.order_index - b.order_index) || []
           })) || [];
           setFolders(foldersWithInputs);
@@ -317,6 +342,14 @@ const ProjectDetail = () => {
 
   const removeInput = async (inputId: string, folderId: string) => {
     try {
+      // First get the input's attachments to clean up files
+      const input = folders
+        .find(f => f.id === folderId)
+        ?.inputs.find(i => i.id === inputId);
+
+      const attachments = input?.attachments || [];
+
+      // Delete the input (this will cascade delete attachments from DB)
       const { error } = await supabase
         .from('folder_inputs')
         .delete()
@@ -329,20 +362,45 @@ const ProjectDetail = () => {
           description: "Failed to remove input",
           variant: "destructive",
         });
-      } else {
-        setFolders(prev => prev.map(f => 
-          f.id === folderId 
-            ? { ...f, inputs: f.inputs.filter(input => input.id !== inputId) }
-            : f
-        ));
-        toast({
-          title: "Input removed",
-          description: "Input field has been removed successfully.",
-        });
+        return;
       }
+
+      // Clean up files from storage
+      if (attachments.length > 0) {
+        const filePaths = attachments.map(att => att.file_path);
+        const { error: storageError } = await supabase.storage
+          .from('media')
+          .remove(filePaths);
+
+        if (storageError) {
+          console.error('Error cleaning up files:', storageError);
+          // Don't fail the operation for storage cleanup errors
+        }
+      }
+
+      setFolders(prev => prev.map(f =>
+        f.id === folderId
+          ? { ...f, inputs: f.inputs.filter(input => input.id !== inputId) }
+          : f
+      ));
+
+      toast({
+        title: "Input removed",
+        description: "Input field has been removed successfully.",
+      });
+
     } catch (error) {
       console.error('Error removing input:', error);
     }
+  };
+
+  const handleAttachmentsChange = (inputId: string, attachments: InputAttachment[]) => {
+    setFolders(prev => prev.map(folder => ({
+      ...folder,
+      inputs: folder.inputs.map(input =>
+        input.id === inputId ? { ...input, attachments } : input
+      )
+    })));
   };
 
   const deleteFolder = async (folderId: string) => {
@@ -360,7 +418,11 @@ const ProjectDetail = () => {
         });
         return;
       }
-      // First delete all folder inputs
+      // Get all attachments for cleanup before deleting
+      const folder = folders.find(f => f.id === folderId);
+      const allAttachments = folder?.inputs.flatMap(input => input.attachments || []) || [];
+
+      // First delete all folder inputs (this will cascade delete attachments from DB)
       const { error: inputsError } = await supabase
         .from('folder_inputs')
         .delete()
@@ -369,6 +431,19 @@ const ProjectDetail = () => {
       if (inputsError) {
         console.error('Error deleting folder inputs:', inputsError);
         throw new Error('Failed to delete folder inputs');
+      }
+
+      // Clean up attachment files from storage
+      if (allAttachments.length > 0) {
+        const filePaths = allAttachments.map(att => att.file_path);
+        const { error: storageError } = await supabase.storage
+          .from('media')
+          .remove(filePaths);
+
+        if (storageError) {
+          console.error('Error cleaning up attachment files:', storageError);
+          // Don't fail the operation for storage cleanup errors
+        }
       }
 
       // Then delete the folder
@@ -791,15 +866,22 @@ const ProjectDetail = () => {
                             </div>
                           )}
                         </div>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => removeInput(input.id, folder.id)}
-                          className="text-red-600 hover:text-red-700 hover:bg-red-50 w-full sm:w-auto flex-shrink-0 text-xs sm:text-sm"
-                        >
-                          <Trash2 className="h-3 w-3 sm:h-4 sm:w-4 mr-2 sm:mr-0" />
-                          <span className="sm:hidden">Remove</span>
-                        </Button>
+                        <div className="flex items-center gap-2">
+                          <FileUploadIcon
+                            inputId={input.id}
+                            attachments={input.attachments}
+                            onAttachmentsChange={(attachments) => handleAttachmentsChange(input.id, attachments)}
+                          />
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => removeInput(input.id, folder.id)}
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50 w-full sm:w-auto flex-shrink-0 text-xs sm:text-sm"
+                          >
+                            <Trash2 className="h-3 w-3 sm:h-4 sm:w-4 mr-2 sm:mr-0" />
+                            <span className="sm:hidden">Remove</span>
+                          </Button>
+                        </div>
                       </div>
                     ))}
 
